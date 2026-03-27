@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Animated } from 'react-native';
 import { Card } from '../components/Card';
-import { ChevronRight, ChevronLeft, FileText, Wallet, ArrowDownLeft, ArrowUpRight, PiggyBank, Receipt, ShoppingCart, Car, Home as HomeIcon, Pizza } from 'lucide-react-native';
+import { ChevronRight, ChevronLeft, FileText, Wallet, ArrowDownLeft, ArrowUpRight, PiggyBank, Receipt, ShoppingCart, Car, Home as HomeIcon, Pizza, Menu } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { BaseLayout } from '../components/BaseLayout';
 import * as Haptics from 'expo-haptics';
@@ -60,8 +60,17 @@ export const Home = () => {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         
         {/* Header & Month Navigation */}
-        <View className="px-4 py-2 mt-4">
-          <Text className="text-[34px] font-interExtraBold text-black dark:text-white mb-4">
+        <View className="px-4 py-2 mt-4 flex-row justify-between items-center mb-4">
+          <Pressable onPress={() => (navigation as any).openDrawer?.()} className="p-3 bg-black/5 dark:bg-white/10 rounded-full">
+            <Menu color={isDark ? '#CBD5E1' : '#475569'} size={24} />
+          </Pressable>
+          <View className="w-10 h-10 rounded-full bg-orange-100 items-center justify-center border-2 border-white dark:border-slate-800 shadow-sm relative">
+            <Text className="text-orange-600 font-interExtraBold text-lg">A</Text>
+            <View className="absolute bottom-0 right-0 w-3 h-3 bg-[#10B981] rounded-full border-2 border-white dark:border-slate-800" />
+          </View>
+        </View>
+        <View className="px-4 mb-2">
+          <Text className="text-[34px] font-interExtraBold text-black dark:text-white mb-2">
             Personal Expenses
           </Text>
           <View className="flex-row items-center justify-between">

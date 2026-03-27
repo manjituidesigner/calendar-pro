@@ -2,8 +2,8 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-// Change this to your local IP address for physical device testing, e.g., 'http://192.168.1.100:5000/api'
-export const API_URL = 'http://localhost:5000/api'; 
+// Use dynamic Environment Variable for production (Vercel sets this), fallback to localhost for local dev
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api'; 
 
 interface AuthContextType {
   user: any;
