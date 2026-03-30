@@ -11,6 +11,8 @@ import { DrawerNavigator } from './src/navigation/DrawerNavigator';
 import { AuthNavigator } from './src/navigation/AuthNavigator';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 
+import { RootNavigator } from './src/navigation/RootNavigator';
+
 const AppNavigator = () => {
   const { isDark } = useTheme();
   const { user, loading } = useAuth();
@@ -31,7 +33,7 @@ const AppNavigator = () => {
     <NavigationContainer theme={navTheme}>
       {user ? (
         <BaseLayout>
-          <DrawerNavigator />
+          <RootNavigator />
         </BaseLayout>
       ) : (
         <AuthNavigator />

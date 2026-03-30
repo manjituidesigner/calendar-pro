@@ -22,4 +22,19 @@ api.interceptors.request.use(
   }
 );
 
+export const expenseService = {
+  addExpense: async (data: any) => {
+    const response = await api.post('/expenses', data);
+    return response.data;
+  },
+  getMonthlyExpenses: async (month: string) => {
+    const response = await api.get(`/expenses/monthly?month=${month}`);
+    return response.data;
+  },
+  getDailyExpenses: async (date: string) => {
+    const response = await api.get(`/expenses/daily?date=${date}`);
+    return response.data;
+  }
+};
+
 export default api;

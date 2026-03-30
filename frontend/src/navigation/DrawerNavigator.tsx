@@ -18,8 +18,8 @@ const CustomDrawerContent = (props: any) => {
       <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 40 }} showsVerticalScrollIndicator={false}>
         <View className="px-6 mb-6 mt-4">
           <View className="flex-row items-center mb-6">
-            <View className="w-14 h-14 rounded-full bg-orange-100 items-center justify-center border-2 border-white dark:border-slate-800 shadow-sm relative">
-              <Text className="text-orange-600 font-interExtraBold text-lg">{user?.username?.[0]?.toUpperCase() || 'A'}</Text>
+            <View className="w-14 h-14 rounded-full bg-[#6B4EFF]/10 items-center justify-center border-2 border-white dark:border-slate-800 shadow-sm relative">
+              <Text className="text-[#6B4EFF] font-interExtraBold text-lg">{user?.username?.[0]?.toUpperCase() || 'A'}</Text>
               <View className="absolute bottom-0 right-0 w-4 h-4 bg-[#10B981] rounded-full border-2 border-white dark:border-slate-800" />
             </View>
             <View className="ml-4">
@@ -27,10 +27,10 @@ const CustomDrawerContent = (props: any) => {
                 {user?.username || 'Alex Johnson'}
               </Text>
               <View className="flex-row items-center mt-1">
-                <View className="w-3 h-3 rounded-full bg-[#3079E6] items-center justify-center mr-1">
+                <View className="w-3 h-3 rounded-full bg-[#6B4EFF] items-center justify-center mr-1">
                   <Text className="text-white text-[8px] font-interExtraBold">✓</Text>
                 </View>
-                <Text className="text-[#3079E6] font-interExtraBold tracking-wider text-[10px] uppercase">
+                <Text className="text-[#6B4EFF] font-interExtraBold tracking-wider text-[10px] uppercase">
                   Pro Member
                 </Text>
               </View>
@@ -40,7 +40,7 @@ const CustomDrawerContent = (props: any) => {
           <View className="flex-row items-center justify-between bg-white dark:bg-[#1E293B] p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
             <View className="flex-1 items-center border-r border-slate-100 dark:border-slate-700">
               <Text className="text-[10px] font-interExtraBold text-slate-500 uppercase tracking-widest mb-1">Total Credit</Text>
-              <Text className="text-[#3079E6] font-interExtraBold text-[16px]">$2,450.00</Text>
+              <Text className="text-[#6B4EFF] font-interExtraBold text-[16px]">$2,450.00</Text>
             </View>
             <View className="flex-1 items-center">
               <Text className="text-[10px] font-interExtraBold text-slate-500 uppercase tracking-widest mb-1">To Pay</Text>
@@ -53,15 +53,15 @@ const CustomDrawerContent = (props: any) => {
           <Text className="text-[10px] font-interExtraBold text-slate-400 uppercase tracking-widest mb-4 ml-2">Overview</Text>
           <View className="flex-row gap-x-4 mb-4">
             <Pressable onPress={() => props.navigation.navigate('CalendarTab')} className="flex-1 bg-white dark:bg-[#1E293B] p-4 rounded-2xl items-center border border-slate-100 dark:border-slate-800 shadow-sm">
-              <View className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 items-center justify-center mb-3">
-                <CalendarIcon color="#8B5CF6" size={20} />
+              <View className="w-10 h-10 rounded-full bg-[#6B4EFF]/10 items-center justify-center mb-3">
+                <CalendarIcon color="#6B4EFF" size={20} />
               </View>
               <Text className="text-black dark:text-white font-interExtraBold text-[20px] mb-1">3</Text>
               <Text className="text-slate-500 dark:text-slate-400 text-[12px] font-interMedium">Calendars</Text>
             </Pressable>
             <Pressable onPress={() => props.navigation.navigate('PeoplesDrawer')} className="flex-1 bg-white dark:bg-[#1E293B] p-4 rounded-2xl items-center border border-slate-100 dark:border-slate-800 shadow-sm">
-              <View className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 items-center justify-center mb-3">
-                <Users color="#3079E6" size={20} />
+              <View className="w-10 h-10 rounded-full bg-[#6B4EFF]/10 items-center justify-center mb-3">
+                <Users color="#6B4EFF" size={20} />
               </View>
               <Text className="text-black dark:text-white font-interExtraBold text-[20px] mb-1">12</Text>
               <Text className="text-slate-500 dark:text-slate-400 text-[12px] font-interMedium">People</Text>
@@ -83,26 +83,18 @@ const CustomDrawerContent = (props: any) => {
 
           <Text className="text-[10px] font-interExtraBold text-slate-400 uppercase tracking-widest mb-4 ml-2">Management</Text>
           <View className="gap-y-6 px-2">
-            <Pressable className="flex-row items-center justify-between">
+            <Pressable onPress={() => props.navigation.navigate('ManageCalendars')} className="flex-row items-center justify-between">
               <View className="flex-row items-center">
-                <Bell color={isDark ? '#E2E8F0' : '#334155'} size={20} />
-                <Text className="ml-4 text-slate-800 dark:text-slate-200 font-interExtraBold text-[15px]">Reminders</Text>
+                <CalendarIcon color={isDark ? '#E2E8F0' : '#334155'} size={20} />
+                <Text className="ml-4 text-slate-800 dark:text-slate-200 font-interExtraBold text-[15px]">Manage Calendars</Text>
               </View>
               <ChevronRight color={isDark ? '#475569' : '#CBD5E1'} size={18} />
             </Pressable>
             
-            <Pressable className="flex-row items-center justify-between">
+            <Pressable onPress={() => props.navigation.navigate('MonthlyReport')} className="flex-row items-center justify-between">
               <View className="flex-row items-center">
                 <FileText color={isDark ? '#E2E8F0' : '#334155'} size={20} />
                 <Text className="ml-4 text-slate-800 dark:text-slate-200 font-interExtraBold text-[15px]">Monthly Reports</Text>
-              </View>
-              <ChevronRight color={isDark ? '#475569' : '#CBD5E1'} size={18} />
-            </Pressable>
-            
-            <Pressable className="flex-row items-center justify-between">
-              <View className="flex-row items-center">
-                <Gift color={isDark ? '#E2E8F0' : '#334155'} size={20} />
-                <Text className="ml-4 text-slate-800 dark:text-slate-200 font-interExtraBold text-[15px]">Referral Network</Text>
               </View>
               <ChevronRight color={isDark ? '#475569' : '#CBD5E1'} size={18} />
             </Pressable>
@@ -130,11 +122,11 @@ export const DrawerNavigator = () => {
       screenOptions={{
         headerShown: false,
         drawerStyle: {
-          backgroundColor: isDark ? '#0F172A' : '#F3E8FF',
-          width: 280,
+          backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
+          width: '80%',
         },
-        drawerActiveBackgroundColor: isDark ? 'rgba(48, 121, 230, 0.2)' : 'rgba(48, 121, 230, 0.1)',
-        drawerActiveTintColor: '#3079E6',
+        drawerActiveBackgroundColor: isDark ? 'rgba(107, 78, 255, 0.2)' : 'rgba(107, 78, 255, 0.1)',
+        drawerActiveTintColor: '#6B4EFF',
         drawerInactiveTintColor: isDark ? '#CBD5E1' : '#475569',
         drawerLabelStyle: {
           fontFamily: 'InterMedium',

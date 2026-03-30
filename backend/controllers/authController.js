@@ -17,10 +17,10 @@ export const signup = async (req, res) => {
   try {
     const { username, phone, email, password } = req.body;
 
-    const userExists = await User.findOne({ 
-      $or: [{ email }, { username }, { phone }] 
+    const userExists = await User.findOne({
+      $or: [{ email }, { username }, { phone }]
     });
-    
+
     if (userExists) {
       if (userExists.username === username) {
         return res.status(400).json({ message: 'Username already exists. Please choose a different one.' });
@@ -101,7 +101,7 @@ export const forgotPassword = async (req, res) => {
 
     // Generate 4 digit OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    
+
     // Set expiry to 10 mins
     user.resetOtp = otp;
     user.resetOtpExpires = Date.now() + 10 * 60 * 1000;
@@ -121,7 +121,7 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-// @desc    Verify OTP
+// @desc   Verify OTP
 // @route   POST /api/auth/verify-otp
 // @access  Public
 export const verifyOtp = async (req, res) => {
@@ -161,7 +161,7 @@ export const resetPassword = async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
-    
+
     user.resetOtp = undefined;
     user.resetOtpExpires = undefined;
     await user.save();

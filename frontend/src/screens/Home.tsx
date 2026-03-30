@@ -1,143 +1,301 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Animated } from 'react-native';
 import { Card } from '../components/Card';
-import { ChevronRight, ChevronLeft, FileText, Wallet, ArrowDownLeft, ArrowUpRight, PiggyBank, Receipt, ShoppingCart, Car, Home as HomeIcon, Pizza, Menu } from 'lucide-react-native';
+import { ChevronRight, ChevronLeft, Wallet, ArrowDown, ArrowUp, Calendar as CalendarIcon, CheckCircle2, Menu, BarChart2 } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { BaseLayout } from '../components/BaseLayout';
 import * as Haptics from 'expo-haptics';
 import { useForm } from '../context/FormContext';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { expenseService } from '../services/api';
+import { useEffect } from 'react';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const Home = () => {
   const { isDark } = useTheme();
-  const { openForm } = useForm();
+  const { openForm, refreshTrigger } = useForm();
   const navigation = useNavigation<NavigationProp<any>>();
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [monthlyExpenses, setMonthlyExpenses] = useState<any[]>([]);
+  const [dailyTotal, setDailyTotal] = useState(0);
 
-  const handleDatePress = (date: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedDate(date);
-    openForm();
+  const fetchExpenses = async () => {
+    try {
+      const yyyy = currentMonth.getFullYear();
+      const mm = String(currentMonth.getMonth() + 1).padStart(2, '0');
+      const data = await expenseService.getMonthlyExpenses(`${yyyy}-${mm}`);
+      setMonthlyExpenses(data);
+    } catch (error) {
+      console.log('Failed to fetch monthly expenses', error);
+    }
   };
 
-  const renderMetricCard = (title: string, amount: string, icon: React.ReactNode, colorClass: string) => (
-    <View className="w-[49%] mb-2">
-      <Card style={{ marginHorizontal: 0 }}>
-        <View className="flex-row items-center justify-between mb-2">
-          {icon}
-        </View>
-        <Text className="text-[12px] font-interLight text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-          {title}
-        </Text>
-        <Text className={`text-[24px] font-interExtraBold ${colorClass} mt-1`} numberOfLines={1} adjustsFontSizeToFit>
-          {amount}
-        </Text>
-      </Card>
-    </View>
-  );
+  useEffect(() => {
+    fetchExpenses();
+  }, [currentMonth, refreshTrigger]);
 
-  const renderCategoryRow = (name: string, icon: React.ReactNode, progress: number, color: string) => (
-    <View className="flex-row items-center mb-4">
-      <View className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl mr-4">
-        {icon}
-      </View>
-      <View className="flex-1">
-        <View className="flex-row justify-between mb-2">
-          <Text className="text-[16px] font-interMedium text-black dark:text-white">{name}</Text>
-          <Text className="text-[14px] font-interExtraBold text-slate-600 dark:text-slate-300">{progress}%</Text>
-        </View>
-        <View className="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-          <View className="h-full rounded-full" style={{ width: `${progress}%`, backgroundColor: color }} />
-        </View>
-      </View>
-    </View>
-  );
+  useEffect(() => {
+    const yyyy = currentMonth.getFullYear();
+    const mm = String(currentMonth.getMonth() + 1).padStart(2, '0');
+    const dd = String(selectedDate).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    
+    let total = 0;
+    monthlyExpenses.forEach(exp => {
+      if (exp.date === dateStr) {
+        total += exp.totalAmount || 0;
+      }
+    });
+    setDailyTotal(total);
+  }, [selectedDate, monthlyExpenses, currentMonth]);
+
+  const hasExpenses = (date: number) => {
+    const yyyy = currentMonth.getFullYear();
+    const mm = String(currentMonth.getMonth() + 1).padStart(2, '0');
+    const dd = String(date).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    return monthlyExpenses.some(exp => exp.date === dateStr);
+  };
+
+  const handlePrevMonth = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  // Generate days for the calendar view based on currentMonth
+  const generateDates = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const dates = [];
+    let week = [];
+    
+    for (let i = 0; i < firstDay; i++) {
+      week.push(null);
+    }
+    
+    for (let i = 1; i <= daysInMonth; i++) {
+      week.push(i);
+      if (week.length === 7) {
+        dates.push(week);
+        week = [];
+      }
+    }
+    if (week.length > 0) {
+      while (week.length < 7) {
+        week.push(null);
+      }
+      dates.push(week);
+    }
+    return dates;
+  };
+  const calendarWeeks = generateDates();
+
+  const handleDatePress = (dateObj: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedDate(dateObj);
+    const newTargetDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), dateObj);
+    openForm(newTargetDate);
+  };
 
   return (
     <BaseLayout>
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView className="flex-1 bg-[#E8EDF9] dark:bg-slate-900" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         
-        {/* Header & Month Navigation */}
-        <View className="px-4 py-2 mt-4 flex-row justify-between items-center mb-4">
-          <Pressable onPress={() => (navigation as any).openDrawer?.()} className="p-3 bg-black/5 dark:bg-white/10 rounded-full">
+        {/* Header Section */}
+        <View className="px-6 py-4 mt-6 flex-row justify-between items-center bg-transparent">
+          <Pressable onPress={() => (navigation as any).openDrawer?.()} className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full items-center justify-center shadow-sm">
             <Menu color={isDark ? '#CBD5E1' : '#475569'} size={24} />
           </Pressable>
-          <View className="w-10 h-10 rounded-full bg-orange-100 items-center justify-center border-2 border-white dark:border-slate-800 shadow-sm relative">
-            <Text className="text-orange-600 font-interExtraBold text-lg">A</Text>
-            <View className="absolute bottom-0 right-0 w-3 h-3 bg-[#10B981] rounded-full border-2 border-white dark:border-slate-800" />
+          <View className="items-center">
+            <Text className="text-[20px] font-interExtraBold text-slate-800 dark:text-white">
+              My Calendar
+            </Text>
+            <Text className="text-[10px] font-interExtraBold text-[#6B4EFF] tracking-[2px] mt-1">
+              DASHBOARD
+            </Text>
+          </View>
+          <Pressable onPress={() => navigation.navigate('MonthlyReport')} className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full items-center justify-center shadow-sm">
+            <BarChart2 color={isDark ? '#CBD5E1' : '#475569'} size={24} />
+          </Pressable>
+        </View>
+
+        {/* Horizontal Calendar Container */}
+        <View className="px-6 mt-4">
+          <View className="bg-white dark:bg-slate-800 rounded-[32px] pt-6 pb-6 shadow-sm">
+            <View className="flex-row items-center justify-between px-6 mb-6">
+              <Pressable onPress={handlePrevMonth} className="p-2"><ChevronLeft color="#64748B" size={16} /></Pressable>
+              <Text className="text-[14px] font-interExtraBold text-slate-700 dark:text-slate-200 uppercase tracking-widest">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</Text>
+              <Pressable onPress={handleNextMonth} className="p-2"><ChevronRight color="#64748B" size={16} /></Pressable>
+            </View>
+            <View className="flex-row justify-between px-6 mb-4">
+              {['S','M','T','W','T','F','S'].map((day, ix) => (
+                <Text key={`day-${ix}`} className="text-[12px] font-interMedium text-slate-400 w-8 text-center">{day}</Text>
+              ))}
+            </View>
+            {calendarWeeks.map((week, weekIndex) => (
+              <View key={`week-${weekIndex}`} className={`flex-row justify-between px-4 ${weekIndex > 0 ? 'mt-4' : ''}`}>
+                {week.map((date, dayIndex) => {
+                  const isSelected = date === selectedDate;
+                  const hasData = date ? hasExpenses(date) : false;
+                  const bgColor = isSelected ? 'bg-[#6B4EFF]' : (hasData ? 'bg-[#6B4EFF]' : '');
+                  const textColor = !date ? 'text-transparent' : (isSelected ? 'text-white' : (hasData ? 'text-white' : 'text-slate-700 dark:text-slate-200'));
+
+                  return (
+                    <Pressable
+                      key={`day-${dayIndex}`}
+                      onPress={() => date && handleDatePress(date)}
+                      className={`items-center justify-center w-10 h-10 rounded-full ${bgColor}`}
+                    >
+                      <Text className={`text-[14px] font-interExtraBold ${textColor}`}>
+                        {date || '0'}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))}
           </View>
         </View>
-        <View className="px-4 mb-2">
-          <Text className="text-[34px] font-interExtraBold text-black dark:text-white mb-2">
-            Personal Expenses
-          </Text>
-          <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center bg-black/5 dark:bg-white/5 rounded-full px-4 py-2">
-              <Pressable className="p-1"><ChevronLeft color={isDark ? '#CBD5E1' : '#475569'} size={20} /></Pressable>
-              <Text className="text-[18px] font-interExtraBold text-[#3079E6] mx-4 uppercase tracking-widest">October</Text>
-              <Pressable className="p-1"><ChevronRight color={isDark ? '#CBD5E1' : '#475569'} size={20} /></Pressable>
+
+        {/* Main Metric Cards */}
+        <View className="flex-row justify-between px-6 mt-6">
+          <View className="w-[48%] bg-[#6B4EFF] rounded-[32px] p-5 shadow-lg shadow-indigo-500/30">
+            <View className="w-10 h-10 bg-white/20 rounded-full items-center justify-center mb-6 mt-1">
+              <Wallet color="#FFF" size={20} />
             </View>
-            <Pressable onPress={() => navigation.navigate('Reports' as never)} className="p-3 bg-actionBlue/10 rounded-full">
-              <FileText color="#3079E6" size={24} />
+            <Text className="text-[10px] font-interExtraBold text-white/70 uppercase tracking-widest mb-1">
+              Total Expense
+            </Text>
+            <Text className="text-[22px] font-interExtraBold text-white" adjustsFontSizeToFit numberOfLines={1}>
+              $2,840.00
+            </Text>
+          </View>
+          
+          <View className="w-[48%] bg-white dark:bg-slate-800 rounded-[32px] p-5 shadow-sm">
+            <View className="w-10 h-10 bg-[#6B4EFF]/10 rounded-full items-center justify-center mb-6 mt-1">
+              <Wallet color="#6B4EFF" size={20} />
+            </View>
+            <Text className="text-[10px] font-interExtraBold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+              Monthly Budget
+            </Text>
+            <Text className="text-[22px] font-interExtraBold text-slate-800 dark:text-white" adjustsFontSizeToFit numberOfLines={1}>
+              $4,500.00
+            </Text>
+          </View>
+        </View>
+
+        {/* Financial Status Grid */}
+        <View className="px-6 mt-8">
+          <View className="flex-row items-center justify-between mb-6">
+            <Text className="text-[18px] font-interExtraBold text-slate-800 dark:text-white">
+              Financial Status
+            </Text>
+            <View className="bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-full">
+              <Text className="text-[10px] font-interExtraBold text-[#6B4EFF] uppercase tracking-wider">
+                Real-Time
+              </Text>
+            </View>
+          </View>
+          
+          <View className="flex-row flex-wrap justify-between">
+            {/* Today's Expense */}
+            <Pressable onPress={() => navigation.navigate('DailyExpensesDetail', { date: selectedDate, currentMonth: currentMonth.toISOString() })} className="w-[48%] bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm">
+              <View className="w-10 h-10 bg-orange-50 dark:bg-orange-500/10 rounded-full items-center justify-center mb-4">
+                <CalendarIcon color="#F97316" size={18} />
+              </View>
+              <Text className="text-[18px] font-interExtraBold text-slate-800 dark:text-white mb-1">
+                ${dailyTotal.toFixed(2)}
+              </Text>
+              <Text className="text-[12px] font-interMedium text-slate-400">
+                Today's Expense
+              </Text>
+            </Pressable>
+
+            {/* Remaining */}
+            <View className="w-[48%] bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm">
+              <View className="w-10 h-10 bg-green-50 dark:bg-green-500/10 rounded-full items-center justify-center mb-4">
+                <CheckCircle2 color="#22C55E" size={18} />
+              </View>
+              <Text className="text-[18px] font-interExtraBold text-slate-800 dark:text-white mb-1">
+                $1,660.00
+              </Text>
+              <Text className="text-[12px] font-interMedium text-slate-400">
+                Remaining
+              </Text>
+            </View>
+
+            {/* Borrowed */}
+            <View className="w-[48%] bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm">
+              <View className="w-10 h-10 bg-red-50 dark:bg-red-500/10 rounded-full items-center justify-center mb-4">
+                <ArrowUp color="#EF4444" size={18} />
+              </View>
+              <Text className="text-[18px] font-interExtraBold text-slate-800 dark:text-white mb-1">
+                $250.00
+              </Text>
+              <Text className="text-[12px] font-interMedium text-slate-400">
+                Borrowed
+              </Text>
+            </View>
+
+            {/* To Receive */}
+            <View className="w-[48%] bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm">
+              <View className="w-10 h-10 bg-blue-50 dark:bg-blue-500/10 rounded-full items-center justify-center mb-4">
+                <ArrowDown color="#3B82F6" size={18} />
+              </View>
+              <Text className="text-[18px] font-interExtraBold text-slate-800 dark:text-white mb-1">
+                $120.00
+              </Text>
+              <Text className="text-[12px] font-interMedium text-slate-400">
+                To Receive
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Recent Debts Section */}
+        <View className="px-6 mt-4 mb-8">
+          <View className="flex-row items-center justify-between mb-4 mt-2">
+            <Text className="text-[18px] font-interExtraBold text-slate-800 dark:text-white">
+              Recent Debts
+            </Text>
+            <Pressable>
+              <Text className="text-[12px] font-interExtraBold text-[#6B4EFF]">
+                See All
+              </Text>
             </Pressable>
           </View>
-        </View>
-
-        {/* Horizontal Calendar */}
-        <View className="my-6">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
-            {[...Array(14)].map((_, i) => {
-              const date = i + 10;
-              const isSelected = date === selectedDate;
-              return (
-                <Pressable
-                  key={i}
-                  onPress={() => handleDatePress(date)}
-                  className={`items-center justify-center p-4 rounded-2xl mr-3 border ${
-                    isSelected 
-                      ? 'bg-[#3079E6] border-[#3079E6] shadow-lg shadow-actionBlue/50' 
-                      : 'bg-white/40 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50'
-                  }`}
-                  style={{ width: 65 }}
-                >
-                  <Text className={`text-[12px] font-interMedium uppercase ${isSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>
-                    {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i % 7]}
-                  </Text>
-                  <Text className={`text-[24px] font-interExtraBold mt-1 ${isSelected ? 'text-white' : 'text-black dark:text-white'}`}>
-                    {date}
-                  </Text>
-                  {isSelected && (
-                    <View className="absolute -bottom-1 w-8 h-1 bg-white rounded-full opacity-50" />
-                  )}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* Dashboard Grid (Edge-to-Edge concept: px-4 with tightly packed cards) */}
-        <View className="flex-row flex-wrap justify-between px-4 mb-6">
-          {renderMetricCard('Month Total', '$3,450.00', <Wallet color="#3079E6" size={20} />, 'text-black dark:text-white')}
-          {renderMetricCard('Today', '$124.50', <Receipt color="#F59E0B" size={20} />, 'text-black dark:text-white')}
-          {renderMetricCard('Budget', '$4,000.00', <PiggyBank color="#10B981" size={20} />, 'text-black dark:text-white')}
-          {renderMetricCard('Remaining', '$550.00', <Wallet color="#10B981" size={20} />, 'text-[#10B981]')}
-          {renderMetricCard('Borrowed', '$200.00', <ArrowDownLeft color="#EF4444" size={20} />, 'text-[#EF4444]')}
-          {renderMetricCard('To Receive', '$150.00', <ArrowUpRight color="#10B981" size={20} />, 'text-[#10B981]')}
-        </View>
-
-        {/* Category Breakdown Table */}
-        <View className="px-4">
-          <Card style={{ marginHorizontal: 0 }}>
-            <Text className="text-[18px] font-interExtraBold text-black dark:text-white mb-6">
-              Spending Summary
-            </Text>
-            {renderCategoryRow('Grocery', <ShoppingCart color="#10B981" size={24} />, 65, '#10B981')}
-            {renderCategoryRow('Food & Dining', <Pizza color="#F59E0B" size={24} />, 40, '#F59E0B')}
-            {renderCategoryRow('Transport', <Car color="#3079E6" size={24} />, 25, '#3079E6')}
-            {renderCategoryRow('Rent & Utilities', <HomeIcon color="#8B5CF6" size={24} />, 85, '#8B5CF6')}
-          </Card>
+          
+          <View className="bg-white dark:bg-slate-800 rounded-[24px] p-4 flex-row items-center shadow-sm">
+            <View className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 rounded-full items-center justify-center mr-4">
+              <Text className="text-[14px] font-interExtraBold text-[#6B4EFF]">JD</Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-[15px] font-interExtraBold text-slate-800 dark:text-white mb-0.5">
+                John Doe
+              </Text>
+              <Text className="text-[10px] font-interMedium text-slate-400 uppercase tracking-widest">
+                Borrowed for coffee
+              </Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-[15px] font-interExtraBold text-red-500 mb-0.5">
+                -$12.00
+              </Text>
+              <Text className="text-[10px] font-interMedium text-slate-400">
+                OCT 05
+              </Text>
+            </View>
+          </View>
         </View>
 
       </ScrollView>
