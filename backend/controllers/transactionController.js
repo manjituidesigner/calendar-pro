@@ -62,3 +62,39 @@ export const deleteTransaction = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Update a transaction
+// @route   PUT /api/transactions/:id
+// @access  Private
+export const updateTransaction = async (req, res) => {
+  try {
+    const { 
+      type, amount, date, payeeOrParty, 
+      category, subCategory, items, paymentStatus, method, 
+      lenDenType, notes 
+    } = req.body;
+
+    const transaction = await Transaction.findById(req.params.id);
+
+    if (transaction && transaction.user.toString() === req.user._id.toString()) {
+      transaction.type = type || transaction.type;
+      transaction.amount = amount !== undefined ? amount : transaction.amount;
+      transaction.date = date || transaction.date;
+      transaction.payeeOrParty = payeeOrParty || transaction.payeeOrParty;
+      transaction.category = category || transaction.category;
+      transaction.subCategory = subCategory || transaction.subCategory;
+      transaction.items = items || transaction.items;
+      transaction.paymentStatus = paymentStatus || transaction.paymentStatus;
+      transaction.method = method || transaction.method;
+      transaction.lenDenType = lenDenType || transaction.lenDenType;
+      transaction.notes = notes || transaction.notes;
+
+      const updatedTransaction = await transaction.save();
+      res.json(updatedTransaction);
+    } else {
+      res.status(404).json({ message: 'Transaction not found or unauthorized' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

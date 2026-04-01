@@ -34,6 +34,14 @@ export const expenseService = {
   getDailyExpenses: async (date: string) => {
     const response = await api.get(`/expenses/daily?date=${date}`);
     return response.data;
+  },
+  updateExpense: async (id: string, data: any) => {
+    const response = await api.put(`/expenses/${id}`, data);
+    return response.data;
+  },
+  deleteExpense: async (id: string) => {
+    const response = await api.delete(`/expenses/${id}`);
+    return response.data;
   }
 };
 

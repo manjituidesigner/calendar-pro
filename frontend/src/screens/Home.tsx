@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Animated } from 'react-native';
+import { View, Text, ScrollView, Pressable, Animated, Modal, Alert } from 'react-native';
 import { Card } from '../components/Card';
-import { ChevronRight, ChevronLeft, Wallet, ArrowDown, ArrowUp, Calendar as CalendarIcon, CheckCircle2, Menu, BarChart2 } from 'lucide-react-native';
+import { ChevronRight, ChevronLeft, Wallet, ArrowDown, ArrowUp, Calendar as CalendarIcon, CheckCircle2, Menu, BarChart2, X } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { BaseLayout } from '../components/BaseLayout';
 import * as Haptics from 'expo-haptics';
@@ -20,6 +20,9 @@ export const Home = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [monthlyExpenses, setMonthlyExpenses] = useState<any[]>([]);
   const [dailyTotal, setDailyTotal] = useState(0);
+  const [pendingExpenses, setPendingExpenses] = useState<any[]>([]);
+  const [pendingTotal, setPendingTotal] = useState(0);
+  const [isPendingModalVisible, setIsPendingModalVisible] = useState(false);
 
   const fetchExpenses = async () => {
     try {
@@ -42,13 +45,23 @@ export const Home = () => {
     const dd = String(selectedDate).padStart(2, '0');
     const dateStr = `${yyyy}-${mm}-${dd}`;
     
-    let total = 0;
+    let dayTotal = 0;
+    const pendingList: any[] = [];
+    let pTotal = 0;
+
     monthlyExpenses.forEach(exp => {
       if (exp.date === dateStr) {
-        total += exp.totalAmount || 0;
+        dayTotal += exp.totalAmount || 0;
+      }
+      if (exp.paymentStatus === 'Pending') {
+        pendingList.push(exp);
+        pTotal += exp.totalAmount || 0;
       }
     });
-    setDailyTotal(total);
+
+    setDailyTotal(dayTotal);
+    setPendingExpenses(pendingList);
+    setPendingTotal(pTotal);
   }, [selectedDate, monthlyExpenses, currentMonth]);
 
   const hasExpenses = (date: number) => {
@@ -147,8 +160,15 @@ export const Home = () => {
                 {week.map((date, dayIndex) => {
                   const isSelected = date === selectedDate;
                   const hasData = date ? hasExpenses(date) : false;
-                  const bgColor = isSelected ? 'bg-[#6B4EFF]' : (hasData ? 'bg-[#6B4EFF]' : '');
-                  const textColor = !date ? 'text-transparent' : (isSelected ? 'text-white' : (hasData ? 'text-white' : 'text-slate-700 dark:text-slate-200'));
+                  
+                  // Highlight today's date
+                  const today = new Date();
+                  const isToday = date === today.getDate() && 
+                                  currentMonth.getMonth() === today.getMonth() && 
+                                  currentMonth.getFullYear() === today.getFullYear();
+
+                  const bgColor = isToday ? 'bg-green-500' : (isSelected || hasData ? 'bg-[#6B4EFF]' : '');
+                  const textColor = !date ? 'text-transparent' : (isSelected || hasData || isToday ? 'text-white' : 'text-slate-700 dark:text-slate-200');
 
                   return (
                     <Pressable
@@ -259,6 +279,29 @@ export const Home = () => {
                 To Receive
               </Text>
             </View>
+
+            {/* Today's Pending Payment */}
+            <Pressable 
+              onPress={() => setIsPendingModalVisible(true)}
+              className="w-full bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm flex-row items-center justify-between"
+            >
+              <View className="flex-row items-center">
+                <View className="w-12 h-12 bg-yellow-50 dark:bg-yellow-500/10 rounded-full items-center justify-center mr-4">
+                  <Wallet color="#EAB308" size={22} />
+                </View>
+                <View>
+                  <Text className="text-[16px] font-interExtraBold text-slate-800 dark:text-white">
+                    ${pendingTotal.toFixed(2)}
+                  </Text>
+                  <Text className="text-[12px] font-interMedium text-slate-400">
+                    Today Pending Payment
+                  </Text>
+                </View>
+              </View>
+              <View className="bg-yellow-500/10 px-3 py-1 rounded-full">
+                <Text className="text-[10px] font-interExtraBold text-yellow-600 uppercase">{pendingExpenses.length} Pending</Text>
+              </View>
+            </Pressable>
           </View>
         </View>
 
@@ -299,6 +342,69 @@ export const Home = () => {
         </View>
 
       </ScrollView>
+
+      {/* Pending Payment Modal */}
+      <PendingPaymentModal 
+        visible={isPendingModalVisible} 
+        onClose={() => {
+          setIsPendingModalVisible(false);
+          fetchExpenses();
+        }}
+        expenses={pendingExpenses}
+      />
     </BaseLayout>
+  );
+};
+
+const PendingPaymentModal = ({ visible, onClose, expenses }: { visible: boolean, onClose: () => void, expenses: any[] }) => {
+  const { isDark } = useTheme();
+  
+  const handleClearPayment = async (exp: any) => {
+    try {
+      await expenseService.updateExpense(exp._id, { ...exp, paymentStatus: 'Paid' });
+      Alert.alert("Success", "Payment status updated to Paid.");
+      // We don't close here, the parent will refresh via fetchExpenses when closed or keep it open for more updates
+    } catch (error) {
+      Alert.alert("Error", "Failed to update payment status.");
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View className="flex-1 justify-end bg-black/50">
+        <View className="bg-white dark:bg-slate-900 rounded-t-[32px] h-[70%] p-6">
+          <View className="flex-row justify-between items-center mb-6">
+            <Text className="text-[20px] font-interExtraBold text-slate-800 dark:text-white">Pending Payments</Text>
+            <Pressable onPress={onClose} className="p-2"><X color={isDark ? '#FFF' : '#000'} size={24} /></Pressable>
+          </View>
+          
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {expenses.length === 0 ? (
+              <View className="items-center justify-center py-12">
+                <Text className="text-slate-400 font-interMedium">No pending payments found.</Text>
+              </View>
+            ) : (
+              expenses.map((exp) => (
+                <View key={exp._id} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl mb-4 border border-slate-100 dark:border-slate-700">
+                  <View className="flex-row justify-between items-center mb-3">
+                    <View>
+                      <Text className="text-[14px] font-interExtraBold text-slate-800 dark:text-white">{exp.payeeName || exp.partyName}</Text>
+                      <Text className="text-[10px] text-slate-400 uppercase tracking-widest">{exp.date}</Text>
+                    </View>
+                    <Text className="text-[16px] font-interExtraBold text-[#6B4EFF]">${exp.totalAmount.toFixed(2)}</Text>
+                  </View>
+                  <Pressable 
+                    onPress={() => handleClearPayment(exp)}
+                    className="bg-[#6B4EFF] py-3 rounded-xl items-center"
+                  >
+                    <Text className="text-white font-interExtraBold text-[12px]">Mark as Paid</Text>
+                  </Pressable>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 };

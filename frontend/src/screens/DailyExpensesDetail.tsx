@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ChevronLeft, ShoppingCart, UserCheck, Tag, Box } from 'lucide-react-native';
+import { ChevronLeft, ShoppingCart, UserCheck, Tag, Box, Edit2, Trash2 } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { BaseLayout } from '../components/BaseLayout';
 import { expenseService } from '../services/api';
+import { TransactionForm } from '../components/TransactionForm';
+import { Alert } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 export const DailyExpensesDetail = () => {
@@ -17,34 +19,64 @@ export const DailyExpensesDetail = () => {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateStr, setDateStr] = useState('');
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<any>(null);
+
+  const fetchDaily = async () => {
+    try {
+      setLoading(true);
+      const d = new Date(currentMonth);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(date).padStart(2, '0');
+      const formattedDate = `${yyyy}-${mm}-${dd}`;
+      
+      const displayDate = new Date(yyyy, d.getMonth(), date).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      setDateStr(displayDate);
+      
+      const data = await expenseService.getDailyExpenses(formattedDate);
+      setExpenses(data);
+    } catch (error) {
+      console.log('Failed to fetch daily expenses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDaily = async () => {
-      try {
-        const d = new Date(currentMonth);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(date).padStart(2, '0');
-        const formattedDate = `${yyyy}-${mm}-${dd}`;
-        
-        // Format for display: e.g., "Oct 15, 2026"
-        const displayDate = new Date(yyyy, d.getMonth(), date).toLocaleDateString('en-US', {
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric'
-        });
-        setDateStr(displayDate);
-        
-        const data = await expenseService.getDailyExpenses(formattedDate);
-        setExpenses(data);
-      } catch (error) {
-        console.log('Failed to fetch daily expenses:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchDaily();
   }, [date, currentMonth]);
+
+  const handleDelete = async (id: string) => {
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete this expense?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              await expenseService.deleteExpense(id);
+              fetchDaily();
+            } catch (error) {
+              Alert.alert("Error", "Failed to delete expense");
+            }
+          } 
+        }
+      ]
+    );
+  };
+
+  const handleEdit = (expense: any) => {
+    setSelectedExpense(expense);
+    setIsEditModalVisible(true);
+  };
 
   const total = expenses.reduce((sum, exp) => sum + exp.totalAmount, 0);
 
@@ -107,7 +139,7 @@ export const DailyExpensesDetail = () => {
                           {exp.type === 'Buy' ? exp.payeeName || 'Purchase' : exp.partyName || 'LenDen Record'}
                         </Text>
                         <Text className="font-interSemiBold text-[10px] text-slate-400 uppercase tracking-widest mt-1">
-                          {exp.type === 'Buy' ? `${exp.paymentMethod || 'Cash'} • ${exp.paymentStatus || 'Paid'}` : exp.lenDenType}
+                          {exp.type === 'Buy' ? `${exp.paymentMethod || 'Cash'} • ${exp.paymentStatus || 'Paid'}` : exp.lenDenType} • {exp.time || 'N/A'}
                         </Text>
                       </View>
                     </View>
@@ -159,11 +191,39 @@ export const DailyExpensesDetail = () => {
                     </View>
                   )}
 
+                  {/* Action Buttons */}
+                  <View className="flex-row justify-end mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50 gap-x-3">
+                    <Pressable 
+                      onPress={() => handleEdit(exp)}
+                      className="flex-row items-center bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl"
+                    >
+                      <Edit2 color="#3B82F6" size={14} className="mr-2" />
+                      <Text className="font-interExtraBold text-[12px] text-blue-600 dark:text-blue-400">Edit</Text>
+                    </Pressable>
+                    <Pressable 
+                      onPress={() => handleDelete(exp._id)}
+                      className="flex-row items-center bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-xl"
+                    >
+                      <Trash2 color="#EF4444" size={14} className="mr-2" />
+                      <Text className="font-interExtraBold text-[12px] text-red-600 dark:text-red-400">Delete</Text>
+                    </Pressable>
+                  </View>
+
                 </Animated.View>
               ))}
             </View>
           </ScrollView>
         )}
+
+        <TransactionForm 
+          visible={isEditModalVisible} 
+          onClose={() => {
+            setIsEditModalVisible(false);
+            setSelectedExpense(null);
+            fetchDaily();
+          }} 
+          editData={selectedExpense}
+        />
       </View>
     </BaseLayout>
   );

@@ -15,7 +15,7 @@ interface Item {
   price: string;
 }
 
-export const TransactionForm = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+export const TransactionForm = ({ visible, onClose, editData }: { visible: boolean; onClose: () => void; editData?: any }) => {
   const { isDark } = useTheme();
   const { selectedDate, triggerRefresh } = useForm();
   const [activeTab, setActiveTab] = useState<'Buy' | 'LenDen'>('Buy');
@@ -29,14 +29,43 @@ export const TransactionForm = ({ visible, onClose }: { visible: boolean; onClos
   const [paymentStatus, setPaymentStatus] = useState<'Paid' | 'Pending'>('Paid');
   const [method, setMethod] = useState<'Online' | 'Cash'>('Online');
   const [dateStr, setDateStr] = useState('');
+  const [time, setTime] = useState('');
 
-  // Auto-Fetch Date
+  // Auto-Fetch Date & Populate Edit Data
   useEffect(() => {
     if (visible) {
-      const now = selectedDate || new Date();
-      setDateStr(`${now.getDate()} ${now.toLocaleString('default', { month: 'short' })} ${now.getFullYear()} at ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`);
+      if (editData) {
+        setActiveTab(editData.type);
+        if (editData.type === 'Buy') {
+          setPayee(editData.payeeName || '');
+          setCategory(editData.category || '');
+          setSubCategory(editData.subCategory || '');
+          setItems(editData.items && editData.items.length > 0 ? editData.items.map((item: any) => ({
+            id: item._id || Date.now().toString() + Math.random(),
+            title: item.title,
+            qty: String(item.qty),
+            price: String(item.price)
+          })) : [{ id: '1', title: '', qty: '1', price: '' }]);
+          setPaymentStatus(editData.paymentStatus || 'Paid');
+          setMethod(editData.paymentMethod || 'Online');
+        } else {
+          setPartyName(editData.partyName || '');
+          setLenDenType(editData.lenDenType || 'I GAVE');
+          setTransactionAmount(String(editData.totalAmount || ''));
+          setNotes(editData.notes || '');
+        }
+        
+        const now = selectedDate || new Date();
+        const currentHr = now.getHours();
+        const ampm = currentHr >= 12 ? 'PM' : 'AM';
+        const hr12 = currentHr % 12 || 12;
+        const timeStr = `${hr12}:${String(now.getMinutes()).padStart(2, '0')} ${ampm}`;
+        
+        setTime(editData ? editData.time : timeStr);
+        setDateStr(`${now.getDate()} ${now.toLocaleString('default', { month: 'short' })} ${now.getFullYear()} at ${editData ? editData.time : timeStr}`);
+      }
     }
-  }, [visible, selectedDate]);
+  }, [visible, selectedDate, editData]);
 
   // Derived Total
   const totalAmount = items.reduce((sum, item) => sum + (parseFloat(item.price) || 0) * (parseFloat(item.qty) || 1), 0);
@@ -73,6 +102,7 @@ export const TransactionForm = ({ visible, onClose }: { visible: boolean; onClos
 
       const payload: any = {
         date: dateStrFormat,
+        time: time,
         type: activeTab,
         notes,
       };
@@ -95,8 +125,13 @@ export const TransactionForm = ({ visible, onClose }: { visible: boolean; onClos
          });
       }
 
-      await expenseService.addExpense(payload);
-      Alert.alert("Success", `${activeTab} Entry Saved!`);
+      if (editData && editData._id) {
+        await expenseService.updateExpense(editData._id, payload);
+        Alert.alert("Success", `${activeTab} Entry Updated!`);
+      } else {
+        await expenseService.addExpense(payload);
+        Alert.alert("Success", `${activeTab} Entry Saved!`);
+      }
       triggerRefresh();
       onClose();
     } catch (error: any) {
@@ -192,16 +227,27 @@ export const TransactionForm = ({ visible, onClose }: { visible: boolean; onClos
           </View>
         </View>
 
-        <View>
+        <View className={`${paymentStatus === 'Pending' ? 'opacity-50' : ''}`}>
           <Text className="text-[10px] font-interExtraBold text-[#6B4EFF] uppercase tracking-widest mb-3 pl-2">Payment Method</Text>
           <View className="flex-row rounded-full overflow-hidden bg-white dark:bg-[#0F172A] border border-slate-100 dark:border-slate-700 p-1">
-            <Pressable onPress={() => setMethod('Online')} className={`flex-1 py-3 rounded-full items-center ${method === 'Online' ? 'bg-white dark:bg-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.05)]' : ''}`}>
+            <Pressable 
+              disabled={paymentStatus === 'Pending'}
+              onPress={() => setMethod('Online')} 
+              className={`flex-1 py-3 rounded-full items-center ${method === 'Online' ? 'bg-white dark:bg-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.05)]' : ''}`}
+            >
               <Text className={`font-interExtraBold tracking-wide text-[12px] ${method === 'Online' ? 'text-[#6B4EFF]' : 'text-slate-400 dark:text-slate-500'}`}>Online</Text>
             </Pressable>
-            <Pressable onPress={() => setMethod('Cash')} className={`flex-1 py-3 rounded-full items-center ${method === 'Cash' ? 'bg-white dark:bg-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.05)]' : ''}`}>
+            <Pressable 
+              disabled={paymentStatus === 'Pending'}
+              onPress={() => setMethod('Cash')} 
+              className={`flex-1 py-3 rounded-full items-center ${method === 'Cash' ? 'bg-white dark:bg-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.05)]' : ''}`}
+            >
               <Text className={`font-interExtraBold tracking-wide text-[12px] ${method === 'Cash' ? 'text-[#6B4EFF]' : 'text-slate-400 dark:text-slate-500'}`}>Cash</Text>
             </Pressable>
           </View>
+          {paymentStatus === 'Pending' && (
+            <Text className="text-[9px] text-[#6B4EFF] font-interBold mt-2 ml-2 italic">Disabled (Payment is Pending)</Text>
+          )}
         </View>
       </View>
 
@@ -321,7 +367,7 @@ export const TransactionForm = ({ visible, onClose }: { visible: boolean; onClos
                   <X color={isDark ? '#CBD5E1' : '#475569'} size={20} />
                 </Pressable>
                 <Text className="text-[16px] font-interExtraBold text-black dark:text-white mr-2">
-                  Add Expense
+                  {editData ? 'Edit Expense' : 'Add Expense'}
                 </Text>
                 <Pressable className="bg-black dark:bg-white rounded-full w-6 h-6 items-center justify-center">
                   <Text className="text-white dark:text-black text-[12px] font-interExtraBold">?</Text>
@@ -333,7 +379,7 @@ export const TransactionForm = ({ visible, onClose }: { visible: boolean; onClos
                   <Text className="text-[#6B4EFF] font-interExtraBold text-[14px]">Cancel</Text>
                 </Pressable>
                 <Text className="text-[16px] font-interExtraBold text-black dark:text-white">
-                  Add Transaction
+                  {editData ? 'Edit Transaction' : 'Add Transaction'}
                 </Text>
               </View>
             )}
@@ -385,7 +431,9 @@ export const TransactionForm = ({ visible, onClose }: { visible: boolean; onClos
 
                 <View className="px-6">
                   <Pressable onPress={handleSave} className="bg-[#4D3EEB] py-4 rounded-2xl items-center flex-row justify-center shadow-lg shadow-[#4D3EEB]/30">
-                    <Text className="text-white font-interExtraBold text-[16px] mr-2">Save Expense</Text>
+                    <Text className="text-white font-interExtraBold text-[16px] mr-2">
+                      {editData ? 'Update Expense' : 'Save Expense'}
+                    </Text>
                     <ArrowRight color="white" size={20} />
                   </Pressable>
                 </View>
@@ -395,7 +443,9 @@ export const TransactionForm = ({ visible, onClose }: { visible: boolean; onClos
               <View className="gap-y-3 pb-2 pt-2 bg-white dark:bg-slate-900">
                 <Pressable onPress={handleSave} className="bg-[#4D3EEB] py-[18px] rounded-2xl items-center flex-row justify-center shadow-lg shadow-[#4D3EEB]/30">
                   <Save color="white" size={20} className="mr-3" />
-                  <Text className="text-white font-interExtraBold text-[16px]">Save Transaction</Text>
+                  <Text className="text-white font-interExtraBold text-[16px]">
+                    {editData ? 'Update Transaction' : 'Save Transaction'}
+                  </Text>
                 </Pressable>
                 <Pressable onPress={handleDownload} className="bg-[#F8F9FA] dark:bg-slate-800 py-[18px] rounded-2xl items-center flex-row justify-center border border-slate-100 dark:border-slate-700">
                   <Share2 color="#000" size={18} className="mr-3" />

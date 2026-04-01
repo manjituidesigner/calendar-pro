@@ -9,6 +9,7 @@ const itemSchema = new mongoose.Schema({
 const expenseSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   date: { type: String, required: true }, // Format: YYYY-MM-DD
+  time: { type: String }, // Format: HH:MM AM/PM
   type: { type: String, enum: ['Buy', 'LenDen'], required: true },
   
   // Fields for 'Buy' type
