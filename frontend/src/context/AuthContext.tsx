@@ -2,8 +2,8 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-// Use dynamic Environment Variable for production (Vercel sets this), fallback to localhost for local dev
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api'; 
+// Use dynamic Environment Variable for production (Vercel sets this), fallback to Render backend for local dev
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://calendar-pro-zu4d.onrender.com/api'; 
 
 interface AuthContextType {
   user: any;
