@@ -119,3 +119,56 @@ export const deleteExpense = async (req, res) => {
     res.status(500).json({ message: "Failed to delete expense", error: error.message });
   }
 };
+
+export const getPeoples = async (req, res) => {
+  try {
+    const expenses = await Expense.find({
+      userId: req.user._id,
+      type: 'LenDen'
+    });
+
+    const peopleMap = {};
+    expenses.forEach(exp => {
+      const name = exp.partyName || 'Unknown';
+      if (!peopleMap[name]) {
+        peopleMap[name] = { 
+          name, 
+          balance: 0, 
+          synced: true, 
+          type: 'Party',
+          mobile: 'N/A',
+          city: 'N/A'
+        };
+      }
+      if (exp.lenDenType === 'I GAVE') {
+        peopleMap[name].balance += exp.totalAmount;
+      } else if (exp.lenDenType === 'I TOOK') {
+        peopleMap[name].balance -= exp.totalAmount;
+      }
+    });
+
+    res.status(200).json(Object.values(peopleMap));
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch peoples", error: error.message });
+  }
+};
+
+export const getSummary = async (req, res) => {
+  try {
+    const expenses = await Expense.find({ userId: req.user._id });
+    
+    let totalCredit = 0; // To Receive (I GAVE)
+    let totalDebit = 0;  // To Pay (I TOOK)
+    
+    expenses.forEach(exp => {
+      if (exp.type === 'LenDen') {
+        if (exp.lenDenType === 'I GAVE') totalCredit += exp.totalAmount;
+        if (exp.lenDenType === 'I TOOK') totalDebit += exp.totalAmount;
+      }
+    });
+
+    res.status(200).json({ totalCredit, totalDebit });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch summary", error: error.message });
+  }
+};

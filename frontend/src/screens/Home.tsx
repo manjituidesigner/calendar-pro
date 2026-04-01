@@ -1,19 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, Animated, Modal, Alert } from 'react-native';
 import { Card } from '../components/Card';
-import { ChevronRight, ChevronLeft, Wallet, ArrowDown, ArrowUp, Calendar as CalendarIcon, CheckCircle2, Menu, BarChart2, X } from 'lucide-react-native';
+import { ChevronRight, ChevronLeft, Wallet, ArrowDown, ArrowUp, Calendar as CalendarIcon, CheckCircle2, Menu, BarChart2, X, Moon, Sun, ShoppingCart, UserCheck } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { BaseLayout } from '../components/BaseLayout';
 import * as Haptics from 'expo-haptics';
 import { useForm } from '../context/FormContext';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { expenseService } from '../services/api';
-import { useEffect } from 'react';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const Home = () => {
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const { openForm, refreshTrigger } = useForm();
   const navigation = useNavigation<NavigationProp<any>>();
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
@@ -24,15 +23,53 @@ export const Home = () => {
   const [pendingTotal, setPendingTotal] = useState(0);
   const [isPendingModalVisible, setIsPendingModalVisible] = useState(false);
 
+  // New states for real data
+  const [totalMonthExpense, setTotalMonthExpense] = useState(0);
+  const [totalBorrowed, setTotalBorrowed] = useState(0);
+  const [totalToReceive, setTotalToReceive] = useState(0);
+  const [recentDebts, setRecentDebts] = useState<any[]>([]);
+  const [monthlyBudget, setMonthlyBudget] = useState(0);
+
   const fetchExpenses = async () => {
     try {
       const yyyy = currentMonth.getFullYear();
       const mm = String(currentMonth.getMonth() + 1).padStart(2, '0');
       const data = await expenseService.getMonthlyExpenses(`${yyyy}-${mm}`);
       setMonthlyExpenses(data);
+      calculateTotals(data);
     } catch (error) {
       console.log('Failed to fetch monthly expenses', error);
     }
+  };
+
+  const calculateTotals = (data: any[]) => {
+    let tExp = 0;
+    let bwd = 0;
+    let recv = 0;
+    const lendenList: any[] = [];
+
+    data.forEach(exp => {
+      if (exp.type === 'Buy') {
+        tExp += exp.totalAmount || 0;
+      } else if (exp.type === 'LenDen') {
+        if (exp.lenDenType === 'I TOOK') {
+          bwd += exp.totalAmount || 0;
+        } else if (exp.lenDenType === 'I GAVE') {
+          recv += exp.totalAmount || 0;
+        }
+        lendenList.push(exp);
+      }
+    });
+
+    setTotalMonthExpense(tExp);
+    setTotalBorrowed(bwd);
+    setTotalToReceive(recv);
+    
+    // Sort debts by date/time (latest first)
+    const sortedDebts = lendenList.sort((a, b) => {
+      return new Date(`${b.date}T${b.time || '00:00'}`).getTime() - new Date(`${a.date}T${a.time || '00:00'}`).getTime();
+    });
+    setRecentDebts(sortedDebts.slice(0, 3));
   };
 
   useEffect(() => {
@@ -82,7 +119,6 @@ export const Home = () => {
     setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
-  // Generate days for the calendar view based on currentMonth
   const generateDates = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -91,22 +127,13 @@ export const Home = () => {
     
     const dates = [];
     let week = [];
-    
-    for (let i = 0; i < firstDay; i++) {
-      week.push(null);
-    }
-    
+    for (let i = 0; i < firstDay; i++) week.push(null);
     for (let i = 1; i <= daysInMonth; i++) {
       week.push(i);
-      if (week.length === 7) {
-        dates.push(week);
-        week = [];
-      }
+      if (week.length === 7) { dates.push(week); week = []; }
     }
     if (week.length > 0) {
-      while (week.length < 7) {
-        week.push(null);
-      }
+      while (week.length < 7) week.push(null);
       dates.push(week);
     }
     return dates;
@@ -122,13 +149,19 @@ export const Home = () => {
 
   return (
     <BaseLayout>
-      <ScrollView className="flex-1 bg-[#E8EDF9] dark:bg-slate-900" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView className="flex-1 bg-transparent" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         
         {/* Header Section */}
         <View className="px-6 py-4 mt-6 flex-row justify-between items-center bg-transparent">
-          <Pressable onPress={() => (navigation as any).openDrawer?.()} className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full items-center justify-center shadow-sm">
-            <Menu color={isDark ? '#CBD5E1' : '#475569'} size={24} />
-          </Pressable>
+          <View className="flex-row gap-x-2">
+            <Pressable onPress={() => (navigation as any).openDrawer?.()} className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full items-center justify-center shadow-sm">
+              <Menu color={isDark ? '#CBD5E1' : '#475569'} size={24} />
+            </Pressable>
+            <Pressable onPress={toggleTheme} className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full items-center justify-center shadow-sm">
+              {isDark ? <Sun color="#F59E0B" size={24} /> : <Moon color="#6B4EFF" size={24} />}
+            </Pressable>
+          </View>
+
           <View className="items-center">
             <Text className="text-[20px] font-interExtraBold text-slate-800 dark:text-white">
               My Calendar
@@ -144,11 +177,11 @@ export const Home = () => {
 
         {/* Horizontal Calendar Container */}
         <View className="px-6 mt-4">
-          <View className="bg-white dark:bg-slate-800 rounded-[32px] pt-6 pb-6 shadow-sm">
+          <View className="bg-white dark:bg-slate-800 rounded-[32px] pt-6 pb-6 shadow-sm border border-slate-50 dark:border-slate-700/50">
             <View className="flex-row items-center justify-between px-6 mb-6">
-              <Pressable onPress={handlePrevMonth} className="p-2"><ChevronLeft color="#64748B" size={16} /></Pressable>
+              <Pressable onPress={handlePrevMonth} className="p-2"><ChevronLeft color={isDark ? '#94A3B8' : '#64748B'} size={16} /></Pressable>
               <Text className="text-[14px] font-interExtraBold text-slate-700 dark:text-slate-200 uppercase tracking-widest">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</Text>
-              <Pressable onPress={handleNextMonth} className="p-2"><ChevronRight color="#64748B" size={16} /></Pressable>
+              <Pressable onPress={handleNextMonth} className="p-2"><ChevronRight color={isDark ? '#94A3B8' : '#64748B'} size={16} /></Pressable>
             </View>
             <View className="flex-row justify-between px-6 mb-4">
               {['S','M','T','W','T','F','S'].map((day, ix) => (
@@ -161,7 +194,6 @@ export const Home = () => {
                   const isSelected = date === selectedDate;
                   const hasData = date ? hasExpenses(date) : false;
                   
-                  // Highlight today's date
                   const today = new Date();
                   const isToday = date === today.getDate() && 
                                   currentMonth.getMonth() === today.getMonth() && 
@@ -197,11 +229,11 @@ export const Home = () => {
               Total Expense
             </Text>
             <Text className="text-[22px] font-interExtraBold text-white" adjustsFontSizeToFit numberOfLines={1}>
-              $2,840.00
+              ₹{totalMonthExpense.toFixed(2)}
             </Text>
           </View>
           
-          <View className="w-[48%] bg-white dark:bg-slate-800 rounded-[32px] p-5 shadow-sm">
+          <View className="w-[48%] bg-white dark:bg-slate-800 rounded-[32px] p-5 shadow-sm border border-slate-50 dark:border-slate-700/50">
             <View className="w-10 h-10 bg-[#6B4EFF]/10 rounded-full items-center justify-center mb-6 mt-1">
               <Wallet color="#6B4EFF" size={20} />
             </View>
@@ -209,7 +241,7 @@ export const Home = () => {
               Monthly Budget
             </Text>
             <Text className="text-[22px] font-interExtraBold text-slate-800 dark:text-white" adjustsFontSizeToFit numberOfLines={1}>
-              $4,500.00
+              ₹{monthlyBudget.toFixed(2)}
             </Text>
           </View>
         </View>
@@ -229,53 +261,53 @@ export const Home = () => {
           
           <View className="flex-row flex-wrap justify-between">
             {/* Today's Expense */}
-            <Pressable onPress={() => navigation.navigate('DailyExpensesDetail', { date: selectedDate, currentMonth: currentMonth.toISOString() })} className="w-[48%] bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm">
+            <Pressable onPress={() => navigation.navigate('DailyExpensesDetail', { date: selectedDate, currentMonth: currentMonth.toISOString() })} className="w-[48%] bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm border border-slate-50 dark:border-slate-700/50">
               <View className="w-10 h-10 bg-orange-50 dark:bg-orange-500/10 rounded-full items-center justify-center mb-4">
                 <CalendarIcon color="#F97316" size={18} />
               </View>
               <Text className="text-[18px] font-interExtraBold text-slate-800 dark:text-white mb-1">
-                ${dailyTotal.toFixed(2)}
+                ₹{dailyTotal.toFixed(2)}
               </Text>
-              <Text className="text-[12px] font-interMedium text-slate-400">
+              <Text className="text-[12px] font-interMedium text-slate-400 dark:text-slate-500">
                 Today's Expense
               </Text>
             </Pressable>
 
             {/* Remaining */}
-            <View className="w-[48%] bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm">
+            <View className="w-[48%] bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm border border-slate-50 dark:border-slate-700/50">
               <View className="w-10 h-10 bg-green-50 dark:bg-green-500/10 rounded-full items-center justify-center mb-4">
                 <CheckCircle2 color="#22C55E" size={18} />
               </View>
               <Text className="text-[18px] font-interExtraBold text-slate-800 dark:text-white mb-1">
-                $1,660.00
+                ₹{(monthlyBudget - totalMonthExpense).toFixed(2)}
               </Text>
-              <Text className="text-[12px] font-interMedium text-slate-400">
+              <Text className="text-[12px] font-interMedium text-slate-400 dark:text-slate-500">
                 Remaining
               </Text>
             </View>
 
             {/* Borrowed */}
-            <View className="w-[48%] bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm">
+            <View className="w-[48%] bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm border border-slate-50 dark:border-slate-700/50">
               <View className="w-10 h-10 bg-red-50 dark:bg-red-500/10 rounded-full items-center justify-center mb-4">
                 <ArrowUp color="#EF4444" size={18} />
               </View>
               <Text className="text-[18px] font-interExtraBold text-slate-800 dark:text-white mb-1">
-                $250.00
+                ₹{totalBorrowed.toFixed(2)}
               </Text>
-              <Text className="text-[12px] font-interMedium text-slate-400">
+              <Text className="text-[12px] font-interMedium text-slate-400 dark:text-slate-500">
                 Borrowed
               </Text>
             </View>
 
             {/* To Receive */}
-            <View className="w-[48%] bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm">
+            <View className="w-[48%] bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm border border-slate-50 dark:border-slate-700/50">
               <View className="w-10 h-10 bg-blue-50 dark:bg-blue-500/10 rounded-full items-center justify-center mb-4">
                 <ArrowDown color="#3B82F6" size={18} />
               </View>
               <Text className="text-[18px] font-interExtraBold text-slate-800 dark:text-white mb-1">
-                $120.00
+                ₹{totalToReceive.toFixed(2)}
               </Text>
-              <Text className="text-[12px] font-interMedium text-slate-400">
+              <Text className="text-[12px] font-interMedium text-slate-400 dark:text-slate-500">
                 To Receive
               </Text>
             </View>
@@ -283,7 +315,7 @@ export const Home = () => {
             {/* Today's Pending Payment */}
             <Pressable 
               onPress={() => setIsPendingModalVisible(true)}
-              className="w-full bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm flex-row items-center justify-between"
+              className="w-full bg-white dark:bg-slate-800 rounded-[28px] p-5 mb-4 shadow-sm border border-slate-50 dark:border-slate-700/50 flex-row items-center justify-between"
             >
               <View className="flex-row items-center">
                 <View className="w-12 h-12 bg-yellow-50 dark:bg-yellow-500/10 rounded-full items-center justify-center mr-4">
@@ -291,9 +323,9 @@ export const Home = () => {
                 </View>
                 <View>
                   <Text className="text-[16px] font-interExtraBold text-slate-800 dark:text-white">
-                    ${pendingTotal.toFixed(2)}
+                    ₹{pendingTotal.toFixed(2)}
                   </Text>
-                  <Text className="text-[12px] font-interMedium text-slate-400">
+                  <Text className="text-[12px] font-interMedium text-slate-400 dark:text-slate-500">
                     Today Pending Payment
                   </Text>
                 </View>
@@ -309,36 +341,44 @@ export const Home = () => {
         <View className="px-6 mt-4 mb-8">
           <View className="flex-row items-center justify-between mb-4 mt-2">
             <Text className="text-[18px] font-interExtraBold text-slate-800 dark:text-white">
-              Recent Debts
+              Recent Transactions
             </Text>
-            <Pressable>
+            <Pressable onPress={() => navigation.navigate('MonthlyReport')}>
               <Text className="text-[12px] font-interExtraBold text-[#6B4EFF]">
                 See All
               </Text>
             </Pressable>
           </View>
           
-          <View className="bg-white dark:bg-slate-800 rounded-[24px] p-4 flex-row items-center shadow-sm">
-            <View className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 rounded-full items-center justify-center mr-4">
-              <Text className="text-[14px] font-interExtraBold text-[#6B4EFF]">JD</Text>
+          {recentDebts.length === 0 ? (
+            <View className="bg-white dark:bg-slate-800 p-8 rounded-[24px] items-center border border-dashed border-slate-200 dark:border-slate-700">
+               <Text className="text-slate-400 font-interMedium text-[12px]">No recent transactions found.</Text>
             </View>
-            <View className="flex-1">
-              <Text className="text-[15px] font-interExtraBold text-slate-800 dark:text-white mb-0.5">
-                John Doe
-              </Text>
-              <Text className="text-[10px] font-interMedium text-slate-400 uppercase tracking-widest">
-                Borrowed for coffee
-              </Text>
-            </View>
-            <View className="items-end">
-              <Text className="text-[15px] font-interExtraBold text-red-500 mb-0.5">
-                -$12.00
-              </Text>
-              <Text className="text-[10px] font-interMedium text-slate-400">
-                OCT 05
-              </Text>
-            </View>
-          </View>
+          ) : (
+            recentDebts.map((item) => (
+              <View key={item._id} className="bg-white dark:bg-slate-800 rounded-[24px] p-4 flex-row items-center shadow-sm mb-3 border border-slate-50 dark:border-slate-700/50">
+                <View className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 rounded-full items-center justify-center mr-4">
+                  <Text className="text-[14px] font-interExtraBold text-[#6B4EFF]">{item.partyName?.[0] || 'T'}</Text>
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[15px] font-interExtraBold text-slate-800 dark:text-white mb-0.5" numberOfLines={1}>
+                    {item.partyName || 'Transaction'}
+                  </Text>
+                  <Text className="text-[10px] font-interMedium text-slate-400 uppercase tracking-widest">
+                    {item.lenDenType} • {item.notes?.substring(0, 20) || 'No notes'}
+                  </Text>
+                </View>
+                <View className="items-end">
+                  <Text className={`text-[15px] font-interExtraBold mb-0.5 ${item.lenDenType === 'I TOOK' ? 'text-green-500' : 'text-red-500'}`}>
+                    {item.lenDenType === 'I TOOK' ? '+' : '-'}₹{item.totalAmount.toFixed(2)}
+                  </Text>
+                  <Text className="text-[10px] font-interMedium text-slate-400 uppercase">
+                    {item.date.split('-').slice(1).join('/')}
+                  </Text>
+                </View>
+              </View>
+            ))
+          )}
         </View>
 
       </ScrollView>
@@ -363,7 +403,6 @@ const PendingPaymentModal = ({ visible, onClose, expenses }: { visible: boolean,
     try {
       await expenseService.updateExpense(exp._id, { ...exp, paymentStatus: 'Paid' });
       Alert.alert("Success", "Payment status updated to Paid.");
-      // We don't close here, the parent will refresh via fetchExpenses when closed or keep it open for more updates
     } catch (error) {
       Alert.alert("Error", "Failed to update payment status.");
     }
@@ -391,12 +430,9 @@ const PendingPaymentModal = ({ visible, onClose, expenses }: { visible: boolean,
                       <Text className="text-[14px] font-interExtraBold text-slate-800 dark:text-white">{exp.payeeName || exp.partyName}</Text>
                       <Text className="text-[10px] text-slate-400 uppercase tracking-widest">{exp.date}</Text>
                     </View>
-                    <Text className="text-[16px] font-interExtraBold text-[#6B4EFF]">${exp.totalAmount.toFixed(2)}</Text>
+                    <Text className="text-[16px] font-interExtraBold text-[#6B4EFF]">₹{exp.totalAmount.toFixed(2)}</Text>
                   </View>
-                  <Pressable 
-                    onPress={() => handleClearPayment(exp)}
-                    className="bg-[#6B4EFF] py-3 rounded-xl items-center"
-                  >
+                  <Pressable onPress={() => handleClearPayment(exp)} className="bg-[#6B4EFF] py-3 rounded-xl items-center">
                     <Text className="text-white font-interExtraBold text-[12px]">Mark as Paid</Text>
                   </Pressable>
                 </View>

@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import axios from 'axios';
-import { useNavigation } from '@react-native-navigation/native'; // Fallback if necessary
 import { useTheme } from '../../theme/ThemeContext';
+import { BaseLayout } from '../../components/BaseLayout';
 
-export default function Login({ navigation }) {
+export default function Login({ navigation }: any) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -25,8 +25,7 @@ export default function Login({ navigation }) {
         password,
       });
       await login(response.data);
-      // Main app navigator will automatically switch from AuthNavigator to AppNavigator
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('Login Failed', error.response?.data?.message || 'Something went wrong');
     } finally {
       setIsLoading(false);
@@ -34,29 +33,30 @@ export default function Login({ navigation }) {
   };
 
   return (
-    <SafeAreaView className={`flex-1 ${isDark ? 'bg-zinc-900' : 'bg-slate-50'}`}>
+    <BaseLayout>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1 justify-center px-6"
+        className="flex-1 justify-center px-8"
       >
         <View className="mb-10">
-          <Text className={`text-4xl font-InterExtraBold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            Welcome Back
+          <Text className="text-[40px] font-interExtraBold text-slate-900 dark:text-white leading-tight">
+            Welcome{"\n"}Back
           </Text>
-          <Text className={`text-base font-InterLight ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-            Sign in to continue
+          <View className="w-12 h-1.5 bg-[#6B4EFF] rounded-full mt-4" />
+          <Text className="text-[16px] font-interMedium text-slate-500 dark:text-slate-400 mt-4">
+            Sign in to access your ledger
           </Text>
         </View>
 
-        <View className="space-y-4">
+        <View className="gap-y-5">
           <View>
-            <Text className={`text-sm font-InterMedium mb-2 ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>
-              Email, Phone or Username
+            <Text className="text-[12px] font-interExtraBold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-2">
+              Credential
             </Text>
             <TextInput
-              className={`w-full p-4 rounded-xl font-InterMedium ${isDark ? 'bg-zinc-800 text-white' : 'bg-white text-slate-900'} shadow-sm border ${isDark ? 'border-zinc-700' : 'border-slate-200'}`}
-              placeholder="Enter your credential"
-              placeholderTextColor={isDark ? '#71717a' : '#94a3b8'}
+              className="w-full bg-white dark:bg-slate-800/50 p-4 rounded-2xl text-slate-900 dark:text-white font-interMedium shadow-sm border border-slate-200 dark:border-slate-800"
+              placeholder="Email, Phone or Username"
+              placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
               value={identifier}
               onChangeText={setIdentifier}
               autoCapitalize="none"
@@ -64,13 +64,13 @@ export default function Login({ navigation }) {
           </View>
 
           <View>
-            <Text className={`text-sm font-InterMedium mb-2 ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>
+            <Text className="text-[12px] font-interExtraBold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-2">
               Password
             </Text>
             <TextInput
-              className={`w-full p-4 rounded-xl font-InterMedium ${isDark ? 'bg-zinc-800 text-white' : 'bg-white text-slate-900'} shadow-sm border ${isDark ? 'border-zinc-700' : 'border-slate-200'}`}
-              placeholder="Enter your password"
-              placeholderTextColor={isDark ? '#71717a' : '#94a3b8'}
+              className="w-full bg-white dark:bg-slate-800/50 p-4 rounded-2xl text-slate-900 dark:text-white font-interMedium shadow-sm border border-slate-200 dark:border-slate-800"
+              placeholder="Your secure password"
+              placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
@@ -78,34 +78,34 @@ export default function Login({ navigation }) {
           </View>
 
           <TouchableOpacity 
-            className="self-end mt-2" 
+            className="self-end mr-2" 
             onPress={() => navigation.navigate('ForgotPassword')}
           >
-            <Text className="text-[#3b82f6] font-InterMedium">Forgot Password?</Text>
+            <Text className="text-[#6B4EFF] font-interExtraBold text-[13px]">Forgot Password?</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="w-full bg-[#3b82f6] p-4 rounded-xl items-center mt-6 shadow-md shadow-blue-500/30"
+            className="w-full bg-[#6B4EFF] p-5 rounded-2xl items-center mt-6 shadow-xl shadow-indigo-500/30"
             onPress={handleLogin}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text className="text-white font-InterExtraBold text-lg">Sign In</Text>
+              <Text className="text-white font-interExtraBold text-lg">Sign In</Text>
             )}
           </TouchableOpacity>
         </View>
 
-        <View className="flex-row justify-center mt-10">
-          <Text className={`font-InterMedium ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+        <View className="flex-row justify-center mt-12">
+          <Text className="font-interMedium text-slate-500 dark:text-slate-400">
             Don't have an account?{' '}
           </Text>
           <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-            <Text className="text-[#3b82f6] font-InterExtraBold">Sign Up</Text>
+            <Text className="text-[#6B4EFF] font-interExtraBold">Sign Up</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </BaseLayout>
   );
 }

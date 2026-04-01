@@ -1,18 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import { BottomTabNavigator } from './BottomTabNavigator';
 import { Peoples } from '../screens/Peoples';
-import { View, Text, Pressable, Image } from 'react-native';
+import { View, Text, Pressable, Image, Switch, ActivityIndicator } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { Calendar as CalendarIcon, Users, Bell, TrendingUp, Settings, Gift, LogOut, FileText, ChevronRight } from 'lucide-react-native';
+import { Calendar as CalendarIcon, Users, Bell, TrendingUp, Settings, Gift, LogOut, FileText, ChevronRight, Moon, Sun } from 'lucide-react-native';
+import { expenseService } from '../services/api';
 
 const Drawer = createDrawerNavigator();
 
 const CustomDrawerContent = (props: any) => {
-  const { isDark } = useTheme();
+  const { theme, toggleTheme, isDark } = useTheme();
   const { user, logout } = useAuth();
   
+  const [summary, setSummary] = useState({ totalCredit: 0, totalDebit: 0 });
+  const [peopleCount, setPeopleCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const fetchDrawerData = async () => {
+    try {
+      setLoading(true);
+      const [summaryData, peoplesData] = await Promise.all([
+        expenseService.getSummary(),
+        expenseService.getPeoples()
+      ]);
+      setSummary(summaryData);
+      setPeopleCount(peoplesData.length);
+    } catch (error) {
+      console.log('Failed to fetch drawer data', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDrawerData();
+  }, []);
+
   return (
     <View style={{ flex: 1 }} className={`${isDark ? 'bg-[#0F172A]' : 'bg-[#F8FAFC]'}`}>
       <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 40 }} showsVerticalScrollIndicator={false}>
@@ -24,14 +49,14 @@ const CustomDrawerContent = (props: any) => {
             </View>
             <View className="ml-4">
               <Text className="text-black dark:text-white font-interExtraBold text-[18px]">
-                {user?.username || 'Alex Johnson'}
+                {user?.username || 'User'}
               </Text>
               <View className="flex-row items-center mt-1">
                 <View className="w-3 h-3 rounded-full bg-[#6B4EFF] items-center justify-center mr-1">
                   <Text className="text-white text-[8px] font-interExtraBold">✓</Text>
                 </View>
                 <Text className="text-[#6B4EFF] font-interExtraBold tracking-wider text-[10px] uppercase">
-                  Pro Member
+                  Verified Account
                 </Text>
               </View>
             </View>
@@ -40,11 +65,11 @@ const CustomDrawerContent = (props: any) => {
           <View className="flex-row items-center justify-between bg-white dark:bg-[#1E293B] p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
             <View className="flex-1 items-center border-r border-slate-100 dark:border-slate-700">
               <Text className="text-[10px] font-interExtraBold text-slate-500 uppercase tracking-widest mb-1">Total Credit</Text>
-              <Text className="text-[#6B4EFF] font-interExtraBold text-[16px]">$2,450.00</Text>
+              <Text className="text-[#6B4EFF] font-interExtraBold text-[16px]">₹{summary.totalCredit.toFixed(2)}</Text>
             </View>
             <View className="flex-1 items-center">
               <Text className="text-[10px] font-interExtraBold text-slate-500 uppercase tracking-widest mb-1">To Pay</Text>
-              <Text className="text-[#EF4444] font-interExtraBold text-[16px]">$120.50</Text>
+              <Text className="text-[#EF4444] font-interExtraBold text-[16px]">₹{summary.totalDebit.toFixed(2)}</Text>
             </View>
           </View>
         </View>
@@ -56,14 +81,14 @@ const CustomDrawerContent = (props: any) => {
               <View className="w-10 h-10 rounded-full bg-[#6B4EFF]/10 items-center justify-center mb-3">
                 <CalendarIcon color="#6B4EFF" size={20} />
               </View>
-              <Text className="text-black dark:text-white font-interExtraBold text-[20px] mb-1">3</Text>
-              <Text className="text-slate-500 dark:text-slate-400 text-[12px] font-interMedium">Calendars</Text>
+              <Text className="text-black dark:text-white font-interExtraBold text-[20px] mb-1">1</Text>
+              <Text className="text-slate-500 dark:text-slate-400 text-[12px] font-interMedium">Calendar</Text>
             </Pressable>
             <Pressable onPress={() => props.navigation.navigate('PeoplesDrawer')} className="flex-1 bg-white dark:bg-[#1E293B] p-4 rounded-2xl items-center border border-slate-100 dark:border-slate-800 shadow-sm">
               <View className="w-10 h-10 rounded-full bg-[#6B4EFF]/10 items-center justify-center mb-3">
                 <Users color="#6B4EFF" size={20} />
               </View>
-              <Text className="text-black dark:text-white font-interExtraBold text-[20px] mb-1">12</Text>
+              <Text className="text-black dark:text-white font-interExtraBold text-[20px] mb-1">{peopleCount}</Text>
               <Text className="text-slate-500 dark:text-slate-400 text-[12px] font-interMedium">People</Text>
             </Pressable>
           </View>
@@ -74,7 +99,7 @@ const CustomDrawerContent = (props: any) => {
                 <Bell color="#EF4444" size={18} />
               </View>
               <View>
-                <Text className="text-black dark:text-white font-interExtraBold text-[16px] mb-0.5">5 Active</Text>
+                <Text className="text-black dark:text-white font-interExtraBold text-[16px] mb-0.5">0 Active</Text>
                 <Text className="text-slate-500 dark:text-slate-400 text-[11px] font-interMedium">Reminders pending</Text>
               </View>
             </View>
@@ -82,7 +107,7 @@ const CustomDrawerContent = (props: any) => {
           </View>
 
           <Text className="text-[10px] font-interExtraBold text-slate-400 uppercase tracking-widest mb-4 ml-2">Management</Text>
-          <View className="gap-y-6 px-2">
+          <View className="gap-y-6 px-2 mb-8">
             <Pressable onPress={() => props.navigation.navigate('ManageCalendars')} className="flex-row items-center justify-between">
               <View className="flex-row items-center">
                 <CalendarIcon color={isDark ? '#E2E8F0' : '#334155'} size={20} />
@@ -98,6 +123,19 @@ const CustomDrawerContent = (props: any) => {
               </View>
               <ChevronRight color={isDark ? '#475569' : '#CBD5E1'} size={18} />
             </Pressable>
+
+            <View className="flex-row items-center justify-between mt-2">
+              <View className="flex-row items-center">
+                {isDark ? <Moon color="#E2E8F0" size={20} /> : <Sun color="#334155" size={20} />}
+                <Text className="ml-4 text-slate-800 dark:text-slate-200 font-interExtraBold text-[15px]">Dark Mode</Text>
+              </View>
+              <Switch 
+                value={isDark} 
+                onValueChange={toggleTheme}
+                trackColor={{ false: '#CBD5E1', true: '#6B4EFF' }}
+                thumbColor={isDark ? '#FFF' : '#FFF'}
+              />
+            </View>
           </View>
         </View>
       </DrawerContentScrollView>

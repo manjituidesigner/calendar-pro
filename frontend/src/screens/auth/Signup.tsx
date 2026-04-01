@@ -1,104 +1,139 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
-import { useAuth, API_URL } from '../../context/AuthContext';
+import { View, Text, TextInput, TouchableOpacity, Alert, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import { API_URL } from '../../context/AuthContext';
 import axios from 'axios';
 import { useTheme } from '../../theme/ThemeContext';
+import { BaseLayout } from '../../components/BaseLayout';
 
-const InputField = ({ label, placeholder, value, onChangeText, secure = false, keyboardType = 'default', autoCapitalize = 'none', isDark }) => (
-  <View className="mb-4">
-    <Text className={`text-sm font-InterMedium mb-2 ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>
-      {label}
-    </Text>
-    <TextInput
-      className={`w-full p-4 rounded-xl font-InterMedium ${isDark ? 'bg-zinc-800 text-white' : 'bg-white text-slate-900'} shadow-sm border ${isDark ? 'border-zinc-700' : 'border-slate-200'}`}
-      placeholder={placeholder}
-      placeholderTextColor={isDark ? '#71717a' : '#94a3b8'}
-      value={value}
-      onChangeText={onChangeText}
-      secureTextEntry={secure}
-      keyboardType={keyboardType}
-      autoCapitalize={autoCapitalize}
-    />
-  </View>
-);
-
-export default function Signup({ navigation }) {
+export default function Signup({ navigation }: any) {
   const [username, setUsername] = useState('');
-  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
   const { isDark } = useTheme();
 
   const handleSignup = async () => {
-    if (!username || !phone || !email || !password) {
+    if (!username || !email || !phoneNumber || !password) {
       Alert.alert('Error', 'Please fill all fields');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/auth/signup`, {
+      await axios.post(`${API_URL}/auth/register`, {
         username,
-        phone,
         email,
+        phoneNumber,
         password,
       });
-      Alert.alert('Success', 'Account created successfully! Please login.');
-      navigation.navigate('Login');
-    } catch (error) {
-      Alert.alert('Signup Failed', error.response?.data?.message || 'Something went wrong');
+      Alert.alert('Success', 'Registration successful! Please login.', [
+        { text: 'OK', onPress: () => navigation.navigate('Login') }
+      ]);
+    } catch (error: any) {
+      Alert.alert('Registration Failed', error.response?.data?.message || 'Something went wrong');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <SafeAreaView className={`flex-1 ${isDark ? 'bg-zinc-900' : 'bg-slate-50'}`}>
+    <BaseLayout>
+      <ScrollView showsVerticalScrollIndicator={false}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+        className="flex-1 justify-center px-8 pt-20 pb-20"
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 40 }}>
-          <View className="mb-8">
-            <Text className={`text-3xl font-InterExtraBold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Create Account
+        <View className="mb-10">
+          <Text className="text-[40px] font-interExtraBold text-slate-900 dark:text-white leading-tight">
+            Join the{"\n"}Ledger
+          </Text>
+          <View className="w-12 h-1.5 bg-[#10B981] rounded-full mt-4" />
+          <Text className="text-[16px] font-interMedium text-slate-500 dark:text-slate-400 mt-4">
+            Manage your finances like a pro
+          </Text>
+        </View>
+
+        <View className="gap-y-5">
+          <View>
+            <Text className="text-[12px] font-interExtraBold text-slate-500 uppercase tracking-widest mb-2 ml-2">
+              Full Name
             </Text>
-            <Text className={`text-base font-InterLight ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-              Join us to manage your finances
-            </Text>
+            <TextInput
+              className="w-full bg-white dark:bg-slate-800/50 p-4 rounded-2xl text-slate-900 dark:text-white font-interMedium shadow-sm border border-slate-200 dark:border-slate-800"
+              placeholder="e.g. John Doe"
+              placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+              value={username}
+              onChangeText={setUsername}
+            />
           </View>
 
-          <View className="space-y-2">
-            <InputField label="Username" placeholder="Enter username" value={username} onChangeText={setUsername} isDark={isDark} />
-            <InputField label="Phone Number" placeholder="Enter phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" isDark={isDark} />
-            <InputField label="Email Address" placeholder="Enter email" value={email} onChangeText={setEmail} keyboardType="email-address" isDark={isDark} />
-            <InputField label="Password" placeholder="Create a password" value={password} onChangeText={setPassword} secure isDark={isDark} />
-
-            <TouchableOpacity
-              className="w-full bg-[#3b82f6] p-4 rounded-xl items-center mt-6 shadow-md shadow-blue-500/30"
-              onPress={handleSignup}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text className="text-white font-InterExtraBold text-lg">Sign Up</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <View className="flex-row justify-center mt-8">
-            <Text className={`font-InterMedium ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-              Already have an account?{' '}
+          <View>
+            <Text className="text-[12px] font-interExtraBold text-slate-500 uppercase tracking-widest mb-2 ml-2">
+              Email Address
             </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text className="text-[#3b82f6] font-InterExtraBold">Sign In</Text>
-            </TouchableOpacity>
+            <TextInput
+              className="w-full bg-white dark:bg-slate-800/50 p-4 rounded-2xl text-slate-900 dark:text-white font-interMedium shadow-sm border border-slate-200 dark:border-slate-800"
+              placeholder="john@example.com"
+              placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+            />
           </View>
-        </ScrollView>
+
+          <View>
+            <Text className="text-[12px] font-interExtraBold text-slate-500 uppercase tracking-widest mb-2 ml-2">
+              Phone Number
+            </Text>
+            <TextInput
+              className="w-full bg-white dark:bg-slate-800/50 p-4 rounded-2xl text-slate-900 dark:text-white font-interMedium shadow-sm border border-slate-200 dark:border-slate-800"
+              placeholder="+91 99999 99999"
+              placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+              keyboardType="phone-pad"
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+            />
+          </View>
+
+          <View>
+            <Text className="text-[12px] font-interExtraBold text-slate-500 uppercase tracking-widest mb-2 ml-2">
+              Password
+            </Text>
+            <TextInput
+              className="w-full bg-white dark:bg-slate-800/50 p-4 rounded-2xl text-slate-900 dark:text-white font-interMedium shadow-sm border border-slate-200 dark:border-slate-800"
+              placeholder="Create a strong password"
+              placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
+
+          <TouchableOpacity
+            className="w-full bg-[#10B981] p-5 rounded-2xl items-center mt-6 shadow-xl shadow-green-500/30"
+            onPress={handleSignup}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="text-white font-interExtraBold text-lg">Create Account</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <View className="flex-row justify-center mt-12 mb-10">
+          <Text className="font-interMedium text-slate-500 dark:text-slate-400">
+            Already have an account?{' '}
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+            <Text className="text-[#10B981] font-interExtraBold">Sign In</Text>
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </ScrollView>
+    </BaseLayout>
   );
 }

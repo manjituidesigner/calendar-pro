@@ -42,6 +42,14 @@ export const expenseService = {
   deleteExpense: async (id: string) => {
     const response = await api.delete(`/expenses/${id}`);
     return response.data;
+  },
+  getPeoples: async () => {
+    const response = await api.get('/expenses/peoples');
+    return response.data;
+  },
+  getSummary: async () => {
+    const response = await api.get('/expenses/summary');
+    return response.data;
   }
 };
 

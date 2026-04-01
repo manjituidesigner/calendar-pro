@@ -11,7 +11,7 @@ export const BaseLayout = ({ children }: { children: React.ReactNode }) => {
     <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <LinearGradient
-        colors={isDark ? ['#0F172A', '#1E1B4B'] : ['#F3E8FF', '#E0F2FE']}
+        colors={isDark ? ['#020617', '#0F172A', '#1E293B'] : ['#F8FAFC', '#F1F5F9', '#E2E8F0']}
         style={StyleSheet.absoluteFillObject}
       />
       <View style={{ flex: 1 }}>

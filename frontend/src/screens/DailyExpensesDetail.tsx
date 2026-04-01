@@ -82,7 +82,7 @@ export const DailyExpensesDetail = () => {
 
   return (
     <BaseLayout>
-      <View className="flex-1 bg-[#F4F6FB] dark:bg-slate-900 pt-12">
+      <View className="flex-1 bg-transparent pt-12">
         
         {/* Header */}
         <View className="flex-row items-center justify-between px-6 mb-6 mt-2">
@@ -92,7 +92,7 @@ export const DailyExpensesDetail = () => {
             </Pressable>
             <View>
               <Text className="text-[22px] font-interExtraBold text-slate-800 dark:text-white leading-tight">
-                Today Expenses
+                Daily Ledger
               </Text>
               <Text className="text-[12px] font-interSemiBold text-slate-500 dark:text-slate-400 mt-0.5">
                 {dateStr}
@@ -100,10 +100,10 @@ export const DailyExpensesDetail = () => {
             </View>
           </View>
           
-          <View className="items-end bg-white dark:bg-slate-800 px-4 py-2.5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 w-28">
+          <View className="items-end bg-white dark:bg-slate-800 px-4 py-2.5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 w-28">
             <Text className="text-[9px] font-interExtraBold text-slate-400 uppercase tracking-widest mb-0.5 text-right w-full">Total</Text>
             <Text className="text-[16px] font-interExtraBold text-[#6B4EFF]" numberOfLines={1} adjustsFontSizeToFit>
-              ${total.toFixed(2)}
+              ₹{total.toFixed(2)}
             </Text>
           </View>
         </View>
@@ -120,13 +120,13 @@ export const DailyExpensesDetail = () => {
               {expenses.length === 0 && (
                 <View className="py-12 mt-10 items-center justify-center bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800">
                   <Box color={isDark ? '#475569' : '#CBD5E1'} size={48} className="mb-4 opacity-50" />
-                  <Text className="font-interSemiBold text-[14px] text-slate-400 dark:text-slate-500">No expenses recorded for this day.</Text>
+                  <Text className="font-interSemiBold text-[14px] text-slate-400 dark:text-slate-500 text-center px-4">No expenses recorded for this day.</Text>
                 </View>
               )}
 
               {/* Cards List */}
               {expenses.map((exp, i) => (
-                <Animated.View key={exp._id} entering={FadeInUp.delay(i * 100).duration(400)} className="bg-white dark:bg-slate-800 rounded-3xl p-5 mb-5 shadow-sm border border-slate-100 dark:border-slate-800/50">
+                <Animated.View key={exp._id} entering={FadeInUp.delay(i * 100).duration(400)} className="bg-white dark:bg-slate-800/80 rounded-3xl p-5 mb-5 shadow-sm border border-slate-100 dark:border-slate-700/50">
                   
                   {/* Top Header: Payee & Status */}
                   <View className="flex-row items-center justify-between border-b border-slate-100 dark:border-slate-700/50 pb-4 mb-4">
@@ -145,53 +145,53 @@ export const DailyExpensesDetail = () => {
                     </View>
                     <View className="items-end">
                       <Text className={`font-interExtraBold text-[18px] ${exp.lenDenType === 'I TOOK' ? 'text-green-500' : 'text-red-500'}`}>
-                        {exp.lenDenType === 'I TOOK' ? '+' : '-'}${exp.totalAmount.toFixed(2)}
+                        {exp.lenDenType === 'I TOOK' ? '+' : '-'}₹{exp.totalAmount.toFixed(2)}
                       </Text>
                     </View>
                   </View>
 
-                  {/* Categories (Only for Buy) */}
+                  {/* Categories */}
                   {exp.type === 'Buy' && (exp.category || exp.subCategory) && (
                     <View className="flex-row flex-wrap gap-2 mb-4">
                       {exp.category && (
-                        <View className="bg-slate-50 dark:bg-slate-700/50 px-3 py-1.5 rounded-lg flex-row items-center border border-slate-100 dark:border-slate-700">
+                        <View className="bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-lg flex-row items-center border border-slate-100 dark:border-slate-800">
                           <Tag color={isDark ? '#94A3B8' : '#64748B'} size={12} className="mr-1.5" />
                           <Text className="font-interExtraBold text-[10px] text-slate-600 dark:text-slate-300 uppercase tracking-wider">{exp.category}</Text>
                         </View>
                       )}
                       {exp.subCategory && (
-                        <View className="bg-slate-50 dark:bg-slate-700/50 px-3 py-1.5 rounded-lg flex-row items-center border border-slate-100 dark:border-slate-700">
+                        <View className="bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-lg flex-row items-center border border-slate-100 dark:border-slate-800">
                           <Text className="font-interExtraBold text-[10px] text-slate-600 dark:text-slate-300 uppercase tracking-wider">{exp.subCategory}</Text>
                         </View>
                       )}
                     </View>
                   )}
 
-                  {/* Items List (For Buy) */}
+                  {/* Items List */}
                   {exp.type === 'Buy' && exp.items && exp.items.length > 0 && (
-                    <View className="bg-[#F8FAFC] dark:bg-slate-900/50 rounded-2xl p-4">
+                    <View className="bg-slate-50 dark:bg-slate-900/80 rounded-2xl p-4">
                       <Text className="font-interExtraBold text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Items Breakdown</Text>
                       {exp.items.map((item: any, idx: number) => (
-                        <View key={idx} className="flex-row justify-between items-center mb-2 last:mb-0">
+                        <View key={idx} className={`flex-row justify-between items-center ${idx < exp.items.length - 1 ? 'mb-2' : ''}`}>
                           <Text className="font-interSemiBold text-[13px] text-slate-700 dark:text-slate-300 flex-1 pr-2" numberOfLines={1}>{item.title}</Text>
                           <Text className="font-interSemiBold text-[12px] text-slate-400 dark:text-slate-500 w-12 text-center">x{item.qty}</Text>
-                          <Text className="font-interExtraBold text-[13px] text-slate-800 dark:text-white w-20 text-right">${(item.price * item.qty).toFixed(2)}</Text>
+                          <Text className="font-interExtraBold text-[13px] text-slate-800 dark:text-white w-20 text-right">₹{(item.price * item.qty).toFixed(2)}</Text>
                         </View>
                       ))}
                     </View>
                   )}
 
-                  {/* Notes (For LenDen) */}
+                  {/* Notes */}
                   {exp.type === 'LenDen' && exp.notes && (
-                    <View className="bg-[#F8FAFC] dark:bg-slate-900/50 rounded-2xl p-4">
+                    <View className="bg-slate-50 dark:bg-slate-900/80 rounded-2xl p-4">
                       <Text className="font-interExtraBold text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Description / Notes</Text>
-                      <Text className="font-interMedium text-[13px] text-slate-700 dark:text-slate-300 leading-5">
-                        {exp.notes}
+                      <Text className="font-interMedium text-[13px] text-slate-700 dark:text-slate-300 leading-5 italic">
+                        "{exp.notes}"
                       </Text>
                     </View>
                   )}
 
-                  {/* Action Buttons */}
+                  {/* Actions */}
                   <View className="flex-row justify-end mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50 gap-x-3">
                     <Pressable 
                       onPress={() => handleEdit(exp)}
