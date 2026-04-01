@@ -8,12 +8,14 @@ import * as Haptics from 'expo-haptics';
 import { useForm } from '../context/FormContext';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { expenseService } from '../services/api';
+import { useCalendar } from '../context/CalendarContext';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const Home = () => {
   const { isDark, toggleTheme } = useTheme();
   const { openForm, refreshTrigger } = useForm();
+  const { activeCalendar, loading: calendarLoading } = useCalendar();
   const navigation = useNavigation<NavigationProp<any>>();
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -31,10 +33,11 @@ export const Home = () => {
   const [monthlyBudget, setMonthlyBudget] = useState(0);
 
   const fetchExpenses = async () => {
+    if (!activeCalendar) return;
     try {
       const yyyy = currentMonth.getFullYear();
       const mm = String(currentMonth.getMonth() + 1).padStart(2, '0');
-      const data = await expenseService.getMonthlyExpenses(`${yyyy}-${mm}`);
+      const data = await expenseService.getMonthlyExpenses(`${yyyy}-${mm}`, activeCalendar._id);
       setMonthlyExpenses(data);
       calculateTotals(data);
     } catch (error) {
@@ -74,7 +77,7 @@ export const Home = () => {
 
   useEffect(() => {
     fetchExpenses();
-  }, [currentMonth, refreshTrigger]);
+  }, [currentMonth, refreshTrigger, activeCalendar]);
 
   useEffect(() => {
     const yyyy = currentMonth.getFullYear();
@@ -163,11 +166,11 @@ export const Home = () => {
           </View>
 
           <View className="items-center">
-            <Text className="text-[20px] font-interExtraBold text-slate-800 dark:text-white">
-              My Calendar
+            <Text className="text-[18px] font-interExtraBold text-slate-800 dark:text-white" numberOfLines={1}>
+              {activeCalendar?.name || 'My Ledger'}
             </Text>
             <Text className="text-[10px] font-interExtraBold text-[#6B4EFF] tracking-[2px] mt-1">
-              DASHBOARD
+              {activeCalendar?.category?.toUpperCase() || 'DASHBOARD'}
             </Text>
           </View>
           <Pressable onPress={() => navigation.navigate('MonthlyReport')} className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full items-center justify-center shadow-sm">

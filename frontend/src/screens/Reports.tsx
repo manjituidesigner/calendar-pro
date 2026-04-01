@@ -7,6 +7,7 @@ import { BaseLayout } from '../components/BaseLayout';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { expenseService } from '../services/api';
+import { useCalendar } from '../context/CalendarContext';
 
 const AnimatedProgressBar = ({ spent, budget, color, delay }: { spent: number; budget: number; color: string; delay: number }) => {
   const percentage = Math.min((spent / Math.max(budget, 1)) * 100, 100);
@@ -29,6 +30,7 @@ const AnimatedProgressBar = ({ spent, budget, color, delay }: { spent: number; b
 
 export const Reports = () => {
   const { isDark } = useTheme();
+  const { activeCalendar } = useCalendar();
   const [loading, setLoading] = useState(true);
   const [totalSpent, setTotalSpent] = useState(0);
   const [categories, setCategories] = useState<any[]>([]);
@@ -44,9 +46,11 @@ export const Reports = () => {
       const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const prevMonthStr = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
 
+      if (!activeCalendar) return;
+
       const [currentData, prevData] = await Promise.all([
-        expenseService.getMonthlyExpenses(currentMonthStr),
-        expenseService.getMonthlyExpenses(prevMonthStr)
+        expenseService.getMonthlyExpenses(currentMonthStr, activeCalendar._id),
+        expenseService.getMonthlyExpenses(prevMonthStr, activeCalendar._id)
       ]);
 
       // Calculate Current Month

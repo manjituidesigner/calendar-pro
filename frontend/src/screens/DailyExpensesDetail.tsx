@@ -5,6 +5,7 @@ import { ChevronLeft, ShoppingCart, UserCheck, Tag, Box, Edit2, Trash2 } from 'l
 import { useTheme } from '../theme/ThemeContext';
 import { BaseLayout } from '../components/BaseLayout';
 import { expenseService } from '../services/api';
+import { useCalendar } from '../context/CalendarContext';
 import { TransactionForm } from '../components/TransactionForm';
 import { Alert } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
@@ -13,6 +14,7 @@ export const DailyExpensesDetail = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { isDark } = useTheme();
+  const { activeCalendar } = useCalendar();
 
   const { date, currentMonth } = route.params as any; // date is number (1-31)
   
@@ -37,8 +39,8 @@ export const DailyExpensesDetail = () => {
         year: 'numeric'
       });
       setDateStr(displayDate);
-      
-      const data = await expenseService.getDailyExpenses(formattedDate);
+      if (!activeCalendar) return;
+      const data = await expenseService.getDailyExpenses(formattedDate, activeCalendar._id);
       setExpenses(data);
     } catch (error) {
       console.log('Failed to fetch daily expenses:', error);

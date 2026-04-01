@@ -5,6 +5,7 @@ import { X, Plus, Share2, Download, CheckCircle, Smartphone, Search, Trash2, Che
 import Animated, { FadeIn, FadeOut, SlideInDown } from 'react-native-reanimated';
 import api, { expenseService } from '../services/api';
 import { useForm } from '../context/FormContext';
+import { useCalendar } from '../context/CalendarContext';
 
 interface Item {
   id: string;
@@ -16,6 +17,7 @@ interface Item {
 export const TransactionForm = ({ visible, onClose, editData }: { visible: boolean; onClose: () => void; editData?: any }) => {
   const { isDark } = useTheme();
   const { selectedDate, triggerRefresh } = useForm();
+  const { activeCalendar } = useCalendar();
   const [activeTab, setActiveTab] = useState<'Buy' | 'LenDen'>('Buy');
   const [loading, setLoading] = useState(false);
 
@@ -110,6 +112,8 @@ export const TransactionForm = ({ visible, onClose, editData }: { visible: boole
     if (activeTab === 'Buy' && !payee) return Alert.alert("Required", "Please enter payee name");
     if (activeTab === 'LenDen' && (!partyName || !transactionAmount)) return Alert.alert("Required", "Please enter party name and amount");
 
+    if (!activeCalendar) return Alert.alert("Required", "Please select a calendar first.");
+
     try {
       setLoading(true);
       const targetDate = selectedDate || new Date();
@@ -119,6 +123,7 @@ export const TransactionForm = ({ visible, onClose, editData }: { visible: boole
       const dateStrFormat = `${yyyy}-${mm}-${dd}`;
 
       const payload: any = {
+        calendarId: activeCalendar._id,
         date: dateStrFormat,
         time: time,
         type: activeTab,
@@ -234,6 +239,20 @@ export const TransactionForm = ({ visible, onClose, editData }: { visible: boole
           </Pressable>
         </View>
       </View>
+
+      {paymentStatus === 'Paid' && (
+        <Animated.View entering={FadeIn.duration(200)} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-[28px] border border-slate-100 dark:border-slate-800">
+          <Text className="text-[10px] font-interExtraBold text-[#6B4EFF] uppercase tracking-widest mb-3 pl-2">Payment Method</Text>
+          <View className="flex-row rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-1">
+            <Pressable onPress={() => setMethod('Online')} className={`flex-1 py-3 rounded-full items-center ${method === 'Online' ? 'bg-[#10B981] shadow-sm' : ''}`}>
+              <Text className={`font-interExtraBold text-[12px] ${method === 'Online' ? 'text-white' : 'text-slate-400'}`}>Online</Text>
+            </Pressable>
+            <Pressable onPress={() => setMethod('Cash')} className={`flex-1 py-3 rounded-full items-center ${method === 'Cash' ? 'bg-[#F59E0B] shadow-sm' : ''}`}>
+              <Text className={`font-interExtraBold text-[12px] ${method === 'Cash' ? 'text-white' : 'text-slate-400'}`}>Cash</Text>
+            </Pressable>
+          </View>
+        </Animated.View>
+      )}
       <View className="h-44" />
     </Animated.View>
   );

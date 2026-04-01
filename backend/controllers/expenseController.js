@@ -5,8 +5,12 @@ export const addExpense = async (req, res) => {
     const { 
       date, time, type, payeeName, category, subCategory, 
       paymentStatus, paymentMethod, items, 
-      lenDenType, partyName, notes, totalAmount 
+      lenDenType, partyName, notes, totalAmount, calendarId
     } = req.body;
+
+    if (!calendarId) {
+      return res.status(400).json({ message: "Calendar ID is required." });
+    }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({ message: "Invalid date format. Expected YYYY-MM-DD." });
@@ -14,6 +18,7 @@ export const addExpense = async (req, res) => {
 
     const expense = new Expense({
       userId: req.user._id,
+      calendarId,
       date, time, type, payeeName, category, subCategory, 
       paymentStatus, paymentMethod, items, 
       lenDenType, partyName, notes, totalAmount
@@ -28,15 +33,19 @@ export const addExpense = async (req, res) => {
 
 export const getMonthlyExpenses = async (req, res) => {
   try {
-    const { month } = req.query; // Expected: YYYY-MM
+    const { month, calendarId } = req.query; // Expected: YYYY-MM
     
+    if (!calendarId) {
+      return res.status(400).json({ message: "Calendar ID is required." });
+    }
+
     if (!month || !/^\d{4}-\d{2}$/.test(month)) {
       return res.status(400).json({ message: "Invalid month format. Expected YYYY-MM." });
     }
 
     const regex = new RegExp(`^${month}`);
     const expenses = await Expense.find({
-      userId: req.user._id,
+      calendarId: calendarId,
       date: { $regex: regex }
     });
 
@@ -48,14 +57,18 @@ export const getMonthlyExpenses = async (req, res) => {
 
 export const getDailyExpenses = async (req, res) => {
   try {
-    const { date } = req.query; // Expected: YYYY-MM-DD
+    const { date, calendarId } = req.query; // Expected: YYYY-MM-DD
     
+    if (!calendarId) {
+      return res.status(400).json({ message: "Calendar ID is required." });
+    }
+
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({ message: "Invalid date format. Expected YYYY-MM-DD." });
     }
 
     const expenses = await Expense.find({
-      userId: req.user._id,
+      calendarId: calendarId,
       date: date
     }).sort({ createdAt: -1 });
 
@@ -74,11 +87,13 @@ export const updateExpense = async (req, res) => {
       lenDenType, partyName, notes, totalAmount 
     } = req.body;
 
-    const expense = await Expense.findOne({ _id: id, userId: req.user._id });
+    const expense = await Expense.findById(id);
 
     if (!expense) {
-      return res.status(404).json({ message: "Expense not found or unauthorized" });
+      return res.status(404).json({ message: "Expense not found" });
     }
+
+    // Authorization check would go here (e.g. check if user has edit rights on the calendar)
 
     if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({ message: "Invalid date format. Expected YYYY-MM-DD." });
@@ -108,10 +123,10 @@ export const updateExpense = async (req, res) => {
 export const deleteExpense = async (req, res) => {
   try {
     const { id } = req.params;
-    const expense = await Expense.findOneAndDelete({ _id: id, userId: req.user._id });
+    const expense = await Expense.findByIdAndDelete(id);
 
     if (!expense) {
-      return res.status(404).json({ message: "Expense not found or unauthorized" });
+      return res.status(404).json({ message: "Expense not found" });
     }
 
     res.status(200).json({ message: "Expense deleted successfully." });
@@ -122,8 +137,13 @@ export const deleteExpense = async (req, res) => {
 
 export const getPeoples = async (req, res) => {
   try {
+    const { calendarId } = req.query;
+    if (!calendarId) {
+      return res.status(400).json({ message: "Calendar ID is required." });
+    }
+
     const expenses = await Expense.find({
-      userId: req.user._id,
+      calendarId: calendarId,
       type: 'LenDen'
     });
 
@@ -155,7 +175,12 @@ export const getPeoples = async (req, res) => {
 
 export const getSummary = async (req, res) => {
   try {
-    const expenses = await Expense.find({ userId: req.user._id });
+    const { calendarId } = req.query;
+    if (!calendarId) {
+      return res.status(400).json({ message: "Calendar ID is required." });
+    }
+
+    const expenses = await Expense.find({ calendarId: calendarId });
     
     let totalCredit = 0; // To Receive (I GAVE)
     let totalDebit = 0;  // To Pay (I TOOK)

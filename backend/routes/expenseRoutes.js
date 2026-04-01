@@ -1,3 +1,4 @@
+import express from 'express';
 import { addExpense, getMonthlyExpenses, getDailyExpenses, updateExpense, deleteExpense, getPeoples, getSummary } from '../controllers/expenseController.js';
 import { protect } from '../middleware/authMiddleware.js';
 

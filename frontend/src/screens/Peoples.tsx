@@ -6,11 +6,13 @@ import Animated, { FadeInLeft } from 'react-native-reanimated';
 import { IndividualLedger, Person } from '../components/IndividualLedger';
 import { BaseLayout } from '../components/BaseLayout';
 import { expenseService } from '../services/api';
+import { useCalendar } from '../context/CalendarContext';
 
 const FILTERS = ['All', 'Party'];
 
 export const Peoples = () => {
   const { isDark } = useTheme();
+  const { activeCalendar } = useCalendar();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -18,9 +20,10 @@ export const Peoples = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchPeople = async () => {
+    if (!activeCalendar) return;
     try {
       setLoading(true);
-      const data = await expenseService.getPeoples();
+      const data = await expenseService.getPeoples(activeCalendar._id);
       setPeople(data);
     } catch (error) {
       console.log('Failed to fetch people', error);
@@ -31,7 +34,7 @@ export const Peoples = () => {
 
   useEffect(() => {
     fetchPeople();
-  }, []);
+  }, [activeCalendar]);
 
   const filteredPeople = people.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());

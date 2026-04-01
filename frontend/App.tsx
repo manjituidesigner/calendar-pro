@@ -10,6 +10,7 @@ import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/
 import { DrawerNavigator } from './src/navigation/DrawerNavigator';
 import { AuthNavigator } from './src/navigation/AuthNavigator';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { CalendarProvider } from './src/context/CalendarContext';
 
 import { RootNavigator } from './src/navigation/RootNavigator';
 
@@ -58,7 +59,9 @@ export default function App() {
       <AuthProvider>
         <ThemeProvider>
           <FormProvider>
-            <AppNavigator />
+            <CalendarProvider>
+              <AppNavigator />
+            </CalendarProvider>
           </FormProvider>
         </ThemeProvider>
       </AuthProvider>
