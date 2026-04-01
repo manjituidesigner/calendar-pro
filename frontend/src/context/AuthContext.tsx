@@ -3,7 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 // Use dynamic Environment Variable for production (Vercel sets this), fallback to Render backend for local dev
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://calendar-pro-zu4d.onrender.com/api'; 
+const baseApiUrl = (process.env.EXPO_PUBLIC_API_URL || 'https://calendar-pro-zu4d.onrender.com/api').replace(/\/+$/, '');
+export const API_URL = baseApiUrl.endsWith('/api') ? baseApiUrl : `${baseApiUrl}/api`;
 
 interface AuthContextType {
   user: any;
