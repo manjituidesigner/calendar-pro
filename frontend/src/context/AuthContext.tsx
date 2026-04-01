@@ -5,6 +5,7 @@ import axios from 'axios';
 // Use dynamic Environment Variable for production (Vercel sets this), fallback to Render backend for local dev
 const baseApiUrl = (process.env.EXPO_PUBLIC_API_URL || 'https://calendar-pro-zu4d.onrender.com/api').replace(/\/+$/, '');
 export const API_URL = baseApiUrl.endsWith('/api') ? baseApiUrl : `${baseApiUrl}/api`;
+console.log('Final API_URL being used:', API_URL);
 
 interface AuthContextType {
   user: any;
